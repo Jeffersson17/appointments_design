@@ -1,31 +1,16 @@
-import { mockCompanies } from '@/mocks/companies'
-import { COMPANY_STATUS } from '@/types/status'
-// import { fetchCompanies, updateCompany, deleteCompany } from '@/api/companies'
-
-/**
- * Camada de dados de empresas.
- * Hoje usa mocks; troque pelas chamadas Axios quando a API estiver pronta.
- */
-let companies = mockCompanies.map((item) => ({ ...item }))
+import { fetchCompanies } from '@/api/companies'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getCompanies = async () => {
   await delay()
-  // return (await fetchCompanies()).data
-  return companies.map((item) => ({ ...item }))
+  return (await fetchCompanies()).data
 }
 
 export const toggleCompanyStatus = async (id) => {
   await delay()
   const company = companies.find((item) => item.id === id)
   if (!company) throw new Error('Empresa não encontrada')
-
-  company.status =
-    company.status === COMPANY_STATUS.ACTIVE
-      ? COMPANY_STATUS.INACTIVE
-      : COMPANY_STATUS.ACTIVE
-
   // await updateCompany(id, { status: company.status })
   return { ...company }
 }
@@ -42,7 +27,7 @@ export const createCompany = async (payload) => {
     id: Date.now(),
     name: payload.name.trim(),
     ownerName: payload.ownerName.trim(),
-    status: payload.status || COMPANY_STATUS.ACTIVE,
+    status: payload.status,
     logoUrl: null,
   }
   companies = [company, ...companies]

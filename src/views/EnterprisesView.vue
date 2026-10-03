@@ -15,7 +15,6 @@ import {
   removeCompany,
   toggleCompanyStatus,
 } from '@/services/companiesService'
-import { COMPANY_STATUS, COMPANY_STATUS_LABELS } from '@/types/status'
 
 const companies = ref([])
 const loading = ref(true)
@@ -27,7 +26,6 @@ const showCreateModal = ref(false)
 const form = ref({
   name: '',
   ownerName: '',
-  status: COMPANY_STATUS.ACTIVE,
 })
 
 const modal = ref({
@@ -39,7 +37,7 @@ const modal = ref({
 const columns = [
   { key: 'company', label: 'Empresa' },
   { key: 'ownerName', label: 'Proprietário' },
-  { key: 'status', label: 'Status', width: '120px' },
+  { key: 'status', label: 'Status', width: '300px' },
   { key: 'options', label: 'Opções', width: '56px' },
 ]
 
@@ -56,6 +54,9 @@ const loadCompanies = async () => {
   loading.value = true
   try {
     companies.value = await getCompanies()
+    console.log('Empresas carregadas:', companies.value)
+  } catch (err) {
+    console.error('Erro ao carregar empresas:', err)
   } finally {
     loading.value = false
   }
@@ -74,7 +75,7 @@ const openCreateModal = () => {
   form.value = {
     name: '',
     ownerName: '',
-    status: COMPANY_STATUS.ACTIVE,
+
   }
   formError.value = ''
   showCreateModal.value = true
@@ -138,7 +139,7 @@ const confirmAction = async () => {
 const modalTitle = () => {
   if (modal.value.type === 'delete') return 'Excluir empresa'
   if (modal.value.type === 'toggle') {
-    return modal.value.company?.status === COMPANY_STATUS.ACTIVE
+    return modal.value.company?.status 
       ? 'Desativar empresa'
       : 'Ativar empresa'
   }
@@ -151,17 +152,15 @@ const modalMessage = () => {
     return `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`
   }
   if (modal.value.type === 'toggle') {
-    const action =
-      modal.value.company?.status === COMPANY_STATUS.ACTIVE
-        ? 'desativar'
-        : 'ativar'
-    return `Deseja ${action} a empresa "${name}"?`
+    return `Tem certeza que deseja ${
+      modal.value.company?.status ? 'desativar' : 'ativar'
+    } "${name}"?`
   }
   return 'Tem certeza que deseja continuar?'
 }
 
 const toggleLabel = (status) =>
-  status === COMPANY_STATUS.ACTIVE ? 'Desativar' : 'Ativar'
+  status === companies.value ? 'Desativar' : 'Ativar'
 
 onMounted(loadCompanies)
 </script>
@@ -190,16 +189,20 @@ onMounted(loadCompanies)
         <template #cell-company="{ row }">
           <div class="company-cell">
             <UserAvatar
-              :name="row.name"
+              :name="row.company_name"
               :src="row.logoUrl"
               size="company"
             />
-            <span>{{ row.name }}</span>
+            <span>{{ row.company_name }}</span>
           </div>
         </template>
 
+        <template #cell-ownerName="{ row }">
+          <span>{{ row.owner_name }}</span>
+        </template>
+
         <template #cell-status="{ row }">
-          <StatusBadge :status="row.status" />
+          <StatusBadge :status=row.user.is_active />
         </template>
 
         <template #cell-options="{ row }">
@@ -257,12 +260,7 @@ onMounted(loadCompanies)
       <div class="field">
         <label for="company-status">Status</label>
         <select id="company-status" v-model="form.status">
-          <option :value="COMPANY_STATUS.ACTIVE">
-            {{ COMPANY_STATUS_LABELS[COMPANY_STATUS.ACTIVE] }}
-          </option>
-          <option :value="COMPANY_STATUS.INACTIVE">
-            {{ COMPANY_STATUS_LABELS[COMPANY_STATUS.INACTIVE] }}
-          </option>
+        
         </select>
       </div>
     </FormModal>
