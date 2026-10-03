@@ -1,11 +1,5 @@
 import axios from 'axios'
 
-/**
- * Cliente HTTP centralizado para a API Django REST Framework.
- * Base URL: VITE_API_URL (arquivo .env)
- *
- * Não chama endpoints automaticamente — apenas prepara o cliente.
- */
 const api = axios.create({
   baseURL: import.meta.env.VITE_API_URL,
   headers: {
@@ -30,6 +24,7 @@ api.interceptors.response.use(
       sessionStorage.removeItem('access_token')
       sessionStorage.removeItem('refresh_token')
       sessionStorage.removeItem('isAuthenticated')
+      sessionStorage.removeItem('auth_user')
     }
     return Promise.reject(error)
   },

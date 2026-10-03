@@ -61,10 +61,12 @@ const isActive = (name) => route.name === name
     }"
   >
     <div class="sidebar__brand">
-      <div class="sidebar__logo" aria-hidden="true">A</div>
+      <div class="sidebar__logo" aria-hidden="true">
+        <img src="/src/assets/logo_system-appoinments.png" alt="Logo">
+      </div>
       <div class="sidebar__brand-text">
         <strong>AgendaPro</strong>
-        <span>Painel de Controle</span>
+        <span> Painel de Controle</span>
       </div>
     </div>
 
@@ -116,8 +118,8 @@ const isActive = (name) => route.name === name
 }
 
 .sidebar__logo {
-  width: 2.4rem;
-  height: 2.4rem;
+  width: 3.5rem;
+  height: 3.5rem;
   display: grid;
   place-items: center;
   border-radius: 10px;
