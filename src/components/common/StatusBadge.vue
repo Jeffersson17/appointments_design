@@ -37,6 +37,6 @@ const variant = computed(() =>
 
 .status-badge--neutral {
   background: #e2e8f0;
-  color: #475569;
+  color: #cc0000;
 }
 </style>
