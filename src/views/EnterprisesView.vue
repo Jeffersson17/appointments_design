@@ -1,46 +1,55 @@
 <script setup>
-import { onMounted, ref } from 'vue'
-import ActionButtons from '@/components/common/ActionButtons.vue'
-import ConfirmationModal from '@/components/common/ConfirmationModal.vue'
-import DataTable from '@/components/common/DataTable.vue'
-import FormModal from '@/components/common/FormModal.vue'
-import Pagination from '@/components/common/Pagination.vue'
-import SearchInput from '@/components/common/SearchInput.vue'
-import StatusBadge from '@/components/common/StatusBadge.vue'
-import UserAvatar from '@/components/layout/UserAvatar.vue'
-import { useTableData } from '@/composables/useTableData'
+import { onMounted, ref } from "vue";
+import ActionButtons from "@/components/common/ActionButtons.vue";
+import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
+import DataTable from "@/components/common/DataTable.vue";
+import FormModal from "@/components/common/FormModal.vue";
+import Pagination from "@/components/common/Pagination.vue";
+import SearchInput from "@/components/common/SearchInput.vue";
+import StatusBadge from "@/components/common/StatusBadge.vue";
+import UserAvatar from "@/components/layout/UserAvatar.vue";
+import { useTableData } from "@/composables/useTableData";
 import {
   createCompany,
   getCompanies,
   removeCompany,
   toggleCompanyStatus,
-} from '@/services/companiesService'
+  updateCompany,
+} from "@/services/companiesService";
 
-const companies = ref([])
-const loading = ref(true)
-const actionLoading = ref(false)
-const formLoading = ref(false)
-const formError = ref('')
-const showCreateModal = ref(false)
+const companies = ref([]);
+const loading = ref(true);
+const actionLoading = ref(false);
+const formLoading = ref(false);
+const formError = ref("");
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
+const editingCompany = ref(null);
 
-const form = ref({
-  name: '',
-  ownerName: '',
-})
+const emptyForm = () => ({
+  name: "",
+  ownerName: "",
+  email: "",
+  password: "",
+  status: true,
+  logotipo: null,
+});
+
+const form = ref(emptyForm());
 
 const modal = ref({
   open: false,
   type: null,
   company: null,
-})
+});
 
 const columns = [
-  { key: 'company', label: 'Empresa' },
-  { key: 'ownerName', label: 'Proprietário' },
-  { key: 'email', label: 'E-mail' },
-  { key: 'status', label: 'Status', width: '150px' },
-  { key: 'options', label: 'Opções', width: '56px' },
-]
+  { key: "company", label: "Empresa" },
+  { key: "ownerName", label: "Proprietário" },
+  { key: "email", label: "E-mail" },
+  { key: "status", label: "Status", width: "150px" },
+  { key: "options", label: "Opções", width: "56px" },
+];
 
 const {
   search,
@@ -49,120 +58,174 @@ const {
   totalItems,
   paginatedItems,
   goToPage,
-} = useTableData(companies, ['name', 'ownerName', 'status'])
+} = useTableData(companies, ["name", "ownerName", "status"]);
 
 const loadCompanies = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    companies.value = await getCompanies()
+    companies.value = await getCompanies();
   } catch (err) {
-    console.error('Erro ao carregar empresas:', err)
+    console.error("Erro ao carregar empresas:", err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
 const openModal = (type, company) => {
-  modal.value = { open: true, type, company }
-}
+  modal.value = { open: true, type, company };
+};
 
 const closeModal = (force = false) => {
-  if (actionLoading.value && !force) return
-  modal.value = { open: false, type: null, company: null }
-}
+  if (actionLoading.value && !force) return;
+  modal.value = { open: false, type: null, company: null };
+};
 
 const openCreateModal = () => {
-  form.value = {
-    name: '',
-    ownerName: '',
-
-  }
-  formError.value = ''
-  showCreateModal.value = true
-}
+  form.value = emptyForm();
+  formError.value = "";
+  showCreateModal.value = true;
+};
 
 const closeCreateModal = (force = false) => {
-  if (formLoading.value && !force) return
-  showCreateModal.value = false
-  formError.value = ''
-}
+  if (formLoading.value && !force) return;
+  showCreateModal.value = false;
+  formError.value = "";
+};
+
+const closeEditModal = (force = false) => {
+  if (formLoading.value && !force) return;
+  showEditModal.value = false;
+  editingCompany.value = null;
+  formError.value = "";
+};
 
 const submitCreate = async () => {
   if (!form.value.name.trim() || !form.value.ownerName.trim()) {
-    formError.value = 'Preencha o nome da empresa e do proprietário.'
-    return
+    formError.value = "Preencha o nome da empresa e do proprietário.";
+    return;
   }
 
-  formLoading.value = true
-  formError.value = ''
+  formLoading.value = true;
+  formError.value = "";
 
   try {
-    const created = await createCompany(form.value)
-    companies.value = [created, ...companies.value]
-    closeCreateModal(true)
+    const created = await createCompany(form.value);
+    companies.value = [created, ...companies.value];
+    closeCreateModal(true);
   } catch (err) {
-    formError.value = 'Não foi possível criar a empresa.'
-    console.error(err)
+    formError.value = "Não foi possível criar a empresa.";
+    console.error(err);
   } finally {
-    formLoading.value = false
+    formLoading.value = false;
   }
-}
+};
 
 const handleEdit = (company) => {
-  window.alert(`Edição de "${company.name}" será integrada à API.`)
-}
+  editingCompany.value = company;
+  form.value = {
+    name: company.company_name ?? "",
+    ownerName: company.owner_name ?? "",
+    email: company.user?.email ?? "",
+    password: "",
+    status: company.user?.is_active ?? true,
+    logotipo: company.logotipo ?? null,
+  };
+  formError.value = "";
+  showEditModal.value = true;
+};
+
+const submitEdit = async () => {
+  if (!editingCompany.value) return;
+
+  if (!form.value.name.trim() || !form.value.ownerName.trim()) {
+    formError.value = "Preencha o nome da empresa e do proprietário.";
+    return;
+  }
+
+  formLoading.value = true;
+  formError.value = "";
+
+  const formData = new FormData();
+  formData.append("company_name", form.value.name);
+  formData.append("owner_name", form.value.ownerName);
+  formData.append("email", form.value.email);
+  formData.append("is_active", form.value.status);
+
+  if (form.value.logotipo instanceof File) {
+    formData.append("logotipo", form.value.logotipo);
+  }
+
+  if (form.value.password.trim()) {
+    formData.append("password", form.value.password);
+  } 
+
+  try {
+    const updated = await updateCompany(editingCompany.value.id, formData);
+    companies.value = companies.value.map((item) =>
+      item.id === updated.id ? updated : item,
+    );
+    closeEditModal(true);
+  } catch (err) {
+    console.error("STATUS:", err.response?.status);
+    console.error("ERRO DO DJANGO:", err.response?.data);
+    console.log("PAYLOAD", formData);
+  } finally {
+    formLoading.value = false;
+  }
+};
 
 const confirmAction = async () => {
-  const { type, company } = modal.value
-  if (!company) return
+  const { type, company } = modal.value;
+  if (!company) return;
 
-  actionLoading.value = true
+  actionLoading.value = true;
   try {
-    if (type === 'delete') {
-      await removeCompany(company.id)
-      companies.value = companies.value.filter((item) => item.id !== company.id)
+    if (type === "delete") {
+      await removeCompany(company.id);
+      companies.value = companies.value.filter(
+        (item) => item.id !== company.id,
+      );
     }
 
-    if (type === 'toggle') {
-      const updated = await toggleCompanyStatus(company.id)
+    if (type === "toggle") {
+      const updated = await toggleCompanyStatus(company.id, company);
       companies.value = companies.value.map((item) =>
         item.id === updated.id ? updated : item,
-      )
+      );
     }
 
-    closeModal(true)
+    closeModal(true);
   } finally {
-    actionLoading.value = false
+    actionLoading.value = false;
   }
-}
+};
 
 const modalTitle = () => {
-  if (modal.value.type === 'delete') return 'Excluir empresa'
-  if (modal.value.type === 'toggle') {
-    return modal.value.company?.status 
-      ? 'Desativar empresa'
-      : 'Ativar empresa'
+  if (modal.value.type === "delete") return "Excluir empresa";
+  if (modal.value.type === "toggle") {
+    return modal.value.company?.user?.is_active
+      ? "Desativar empresa"
+      : "Ativar empresa";
   }
-  return 'Confirmar ação'
-}
+  return "Confirmar ação";
+};
 
 const modalMessage = () => {
-  const name = modal.value.company?.name ?? 'esta empresa'
-  if (modal.value.type === 'delete') {
-    return `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`
+  const name = modal.value.company?.company_name ?? "esta empresa";
+  if (modal.value.type === "delete") {
+    return `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`;
   }
-  if (modal.value.type === 'toggle') {
+  if (modal.value.type === "toggle") {
     return `Tem certeza que deseja ${
-      modal.value.company?.status ? 'desativar' : 'ativar'
-    } "${name}"?`
+      modal.value.company?.user?.is_active ? "desativar" : "ativar"
+    } a empresa "${name}"?`;
   }
-  return 'Tem certeza que deseja continuar?'
-}
+  return "Tem certeza que deseja continuar?";
+};
 
-const toggleLabel = (status) =>
-  status === companies.value ? 'Desativar' : 'Ativar'
+const toggleLabel = (status) => (status === true ? "Desativar" : "Ativar");
 
-onMounted(loadCompanies)
+onMounted(loadCompanies);
 </script>
 
 <template>
@@ -170,9 +233,15 @@ onMounted(loadCompanies)
     <header class="page__header">
       <div>
         <h2 class="page__title">Empresas</h2>
-        <p class="page__subtitle">Gerencie as barbearias cadastradas no sistema.</p>
+        <p class="page__subtitle">
+          Gerencie as barbearias cadastradas no sistema.
+        </p>
       </div>
-      <button type="button" class="btn btn--primary page__action" @click="openCreateModal">
+      <button
+        type="button"
+        class="btn btn--primary page__action"
+        @click="openCreateModal"
+      >
         Nova empresa
       </button>
     </header>
@@ -206,13 +275,13 @@ onMounted(loadCompanies)
         </template>
 
         <template #cell-status="{ row }">
-          <StatusBadge :status=row.user.is_active />
+          <StatusBadge :status="row.user.is_active" />
         </template>
 
         <template #cell-options="{ row }">
           <ActionButtons
             show-toggle
-            :toggle-label="toggleLabel(row.status)"
+            :toggle-label="toggleLabel(row.user.is_active)"
             @edit="handleEdit(row)"
             @toggle="openModal('toggle', row)"
             @delete="openModal('delete', row)"
@@ -264,8 +333,80 @@ onMounted(loadCompanies)
       <div class="field">
         <label for="company-status">Status</label>
         <select id="company-status" v-model="form.status">
-        
+          <option :value="true">Ativa</option>
+          <option :value="false">Inativa</option>
         </select>
+      </div>
+    </FormModal>
+
+    <FormModal
+      :open="showEditModal"
+      title="Editar empresa"
+      submit-label="Salvar alterações"
+      :loading="formLoading"
+      :error="formError"
+      @submit="submitEdit"
+      @cancel="closeEditModal"
+    >
+      <div class="field">
+        <label for="edit-company-name">Nome da empresa</label>
+        <input
+          id="edit-company-name"
+          v-model="form.name"
+          type="text"
+          placeholder="Ex: Barbearia Central"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="edit-company-owner">Proprietário</label>
+        <input
+          id="edit-company-owner"
+          v-model="form.ownerName"
+          type="text"
+          placeholder="Ex: Carlos Mendes"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="company-email">Email</label>
+        <input
+          id="company-email"
+          v-model="form.email"
+          type="email"
+          placeholder="contato@barbearia.com"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="company-password">Senha</label>
+        <input
+          id="company-password"
+          v-model="form.password"
+          type="password"
+          placeholder="Senha opcional (deixe em branco para não alterar)"
+        />
+      </div>
+
+      <div class="field">
+        <label for="edit-company-status">Status</label>
+        <select id="edit-company-status" v-model="form.status">
+          <option :value="true">Ativa</option>
+          <option :value="false">Inativa</option>
+        </select>
+      </div>
+
+      <div class="field">
+        <label for="edit-company-logo">Logotipo</label>
+        <input
+          id="edit-company-logo"
+          type="file"
+          accept="image/*"
+          placeholder="URL do logotipo"
+        />
       </div>
     </FormModal>
 
