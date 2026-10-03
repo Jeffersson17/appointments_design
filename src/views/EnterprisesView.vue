@@ -37,7 +37,8 @@ const modal = ref({
 const columns = [
   { key: 'company', label: 'Empresa' },
   { key: 'ownerName', label: 'Proprietário' },
-  { key: 'status', label: 'Status', width: '300px' },
+  { key: 'email', label: 'E-mail' },
+  { key: 'status', label: 'Status', width: '150px' },
   { key: 'options', label: 'Opções', width: '56px' },
 ]
 
@@ -54,7 +55,6 @@ const loadCompanies = async () => {
   loading.value = true
   try {
     companies.value = await getCompanies()
-    console.log('Empresas carregadas:', companies.value)
   } catch (err) {
     console.error('Erro ao carregar empresas:', err)
   } finally {
@@ -199,6 +199,10 @@ onMounted(loadCompanies)
 
         <template #cell-ownerName="{ row }">
           <span>{{ row.owner_name }}</span>
+        </template>
+
+        <template #cell-email="{ row }">
+          <span>{{ row.user.email }}</span>
         </template>
 
         <template #cell-status="{ row }">

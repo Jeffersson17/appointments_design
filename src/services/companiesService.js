@@ -1,4 +1,4 @@
-import { fetchCompanies } from '@/api/companies'
+import { fetchCompanies, deleteCompany } from '@/api/companies'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -17,8 +17,7 @@ export const toggleCompanyStatus = async (id) => {
 
 export const removeCompany = async (id) => {
   await delay()
-  companies = companies.filter((item) => item.id !== id)
-  // await deleteCompany(id)
+  await deleteCompany(id)
 }
 
 export const createCompany = async (payload) => {
