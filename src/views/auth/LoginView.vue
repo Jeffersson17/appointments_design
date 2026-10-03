@@ -2,26 +2,33 @@
 import { ref } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useAuthStore } from '@/stores/auth'
-import { ROLES } from '@/types/roles'
 import { getHomeRouteByRole } from '@/utils/navigation'
 
 const auth = useAuthStore()
-const router = useRouter()
 const route = useRoute()
+const router = useRouter()
 
-const email = ref('joao@agendapro.com')
-const password = ref('senha123')
+const email = ref('')
+const password = ref('')
 const loading = ref(false)
 const error = ref('')
 
-const demoAccounts = [
-  { label: 'Admin', email: 'joao@agendapro.com' },
-  { label: 'Empresa', email: 'empresa@agendapro.com' },
-  { label: 'Cliente', email: 'cliente@agendapro.com' },
-]
 
-const useDemoAccount = (demoEmail) => {
-  email.value = demoEmail
+const resolveRedirect = (userRole) => {
+  const redirectPath = route.query.redirect
+
+  if (typeof redirectPath === 'string' && redirectPath.startsWith('/')) {
+    const clientTryingPanel =
+      userRole === 'CLIENT' && redirectPath.startsWith('/app')
+    const staffTryingClient =
+      userRole !== 'CLIENT' && redirectPath.startsWith('/cliente')
+
+    if (!clientTryingPanel && !staffTryingClient) {
+      return redirectPath
+    }
+  }
+
+  return getHomeRouteByRole(userRole)
 }
 
 const handleSubmit = async () => {
@@ -29,25 +36,22 @@ const handleSubmit = async () => {
   loading.value = true
 
   try {
-    const user = await auth.login(email.value, password.value)
-    const home = getHomeRouteByRole(user.role)
+    const user = await auth.login({
+      email: email.value,
+      password: password.value,
+    })
 
-    if (typeof route.query.redirect === 'string') {
-      const redirectPath = route.query.redirect
-      const clientTryingPanel =
-        user.role === ROLES.CLIENT && redirectPath.startsWith('/app')
-      const staffTryingClient =
-        user.role !== ROLES.CLIENT && redirectPath.startsWith('/cliente')
-
-      if (!clientTryingPanel && !staffTryingClient) {
-        await router.push(redirectPath)
-        return
-      }
-    }
-
-    await router.push(home)
+    await router.push(resolveRedirect(user.role))
   } catch (err) {
-    error.value = 'Não foi possível entrar. Tente novamente.'
+    if (
+      err?.code === 'INVALID_CREDENTIALS' ||
+      err?.message === 'INVALID_CREDENTIALS' ||
+      err?.response?.status === 401
+    ) {
+      error.value = 'E-mail ou senha inválidos.'
+    } else {
+      error.value = 'Não foi possível entrar. Tente novamente.'
+    }
     console.error(err)
   } finally {
     loading.value = false
@@ -94,21 +98,6 @@ const handleSubmit = async () => {
         {{ loading ? 'Entrando...' : 'Entrar' }}
       </button>
     </form>
-
-    <div class="login-card__demos">
-      <p>Acesso rápido para testes:</p>
-      <div>
-        <button
-          v-for="account in demoAccounts"
-          :key="account.email"
-          type="button"
-          class="btn btn--secondary btn--sm"
-          @click="useDemoAccount(account.email)"
-        >
-          {{ account.label }}
-        </button>
-      </div>
-    </div>
   </div>
 </template>
 
@@ -186,5 +175,20 @@ const handleSubmit = async () => {
   display: flex;
   flex-wrap: wrap;
   gap: 0.45rem;
+}
+
+@media (max-width: 480px) {
+  .login-card {
+    padding: 1.5rem 1.15rem;
+  }
+
+  .login-card__demos div {
+    display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .login-card__demos .btn {
+    width: 100%;
+  }
 }
 </style>

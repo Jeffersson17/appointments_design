@@ -1,9 +1,8 @@
 import { computed, ref } from 'vue'
 import { defineStore } from 'pinia'
-import { resolveMockUserByEmail } from '@/mocks/user'
+import { login as loginService, logout as logoutService } from '@/services/authService'
 import { canAccessRoute, hasPermission } from '@/utils/permissions'
 import { getHomeRouteByRole } from '@/utils/navigation'
-// import { loginRequest, fetchCurrentUser, logoutRequest } from '@/api/auth'
 
 const USER_STORAGE_KEY = 'auth_user'
 
@@ -14,6 +13,32 @@ const readStoredUser = () => {
   } catch {
     return null
   }
+}
+
+const persistSession = ({ user, accessToken, refreshToken }) => {
+  sessionStorage.setItem('isAuthenticated', 'true')
+  sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(user))
+  sessionStorage.setItem('access_token', accessToken)
+
+  if (refreshToken) {
+    sessionStorage.setItem('refresh_token', refreshToken)
+  } else {
+    sessionStorage.removeItem('refresh_token')
+  }
+
+  if (user.enterpriseId != null) {
+    sessionStorage.setItem('selected_enterprise_id', String(user.enterpriseId))
+  } else {
+    sessionStorage.removeItem('selected_enterprise_id')
+  }
+}
+
+const clearSessionStorage = () => {
+  sessionStorage.removeItem('isAuthenticated')
+  sessionStorage.removeItem('access_token')
+  sessionStorage.removeItem('refresh_token')
+  sessionStorage.removeItem('selected_enterprise_id')
+  sessionStorage.removeItem(USER_STORAGE_KEY)
 }
 
 export const useAuthStore = defineStore('auth', () => {
@@ -35,58 +60,54 @@ export const useAuthStore = defineStore('auth', () => {
   const homeRoute = computed(() => getHomeRouteByRole(role.value))
 
   /**
-   * Login visual para desenvolvimento.
-   * O e-mail define o perfil mockado (ADMIN / ENTERPRISE / CLIENT).
-   * Futuramente: JWT + usuário da API Django.
+   * Aceita login(email, password) ou login({ email, password }).
    */
-  const login = async (email, _password) => {
-    // const { data } = await loginRequest({ email, password: _password })
-    // accessToken.value = data.access
-    // refreshToken.value = data.refresh
-    // sessionStorage.setItem('access_token', data.access)
-    // sessionStorage.setItem('refresh_token', data.refresh)
-    // const me = await fetchCurrentUser()
-    // user.value = me.data
+  const login = async (emailOrCredentials, passwordArg) => {
+    const credentials =
+      typeof emailOrCredentials === 'object' && emailOrCredentials !== null
+        ? {
+            email: emailOrCredentials.email,
+            password: emailOrCredentials.password,
+          }
+        : {
+            email: emailOrCredentials,
+            password: passwordArg,
+          }
 
-    const nextUser = resolveMockUserByEmail(email)
-    user.value = nextUser
+    const result = await loginService(credentials)
+
+    user.value = result.user
     isAuthenticated.value = true
-    selectedEnterpriseId.value = nextUser.enterpriseId ?? null
+    accessToken.value = result.accessToken
+    refreshToken.value = result.refreshToken
+    selectedEnterpriseId.value = result.user.enterpriseId ?? null
 
-    sessionStorage.setItem('isAuthenticated', 'true')
-    sessionStorage.setItem(USER_STORAGE_KEY, JSON.stringify(nextUser))
-
-    if (nextUser.enterpriseId != null) {
-      sessionStorage.setItem(
-        'selected_enterprise_id',
-        String(nextUser.enterpriseId),
-      )
-    } else {
-      sessionStorage.removeItem('selected_enterprise_id')
-    }
-
-    if (!accessToken.value) {
-      accessToken.value = 'mock-jwt-token'
-      sessionStorage.setItem('access_token', accessToken.value)
-    }
-
-    return nextUser
+    persistSession(result)
+    return result.user
   }
 
   const logout = async () => {
-    // try { await logoutRequest() } catch (_) { /* ignore */ }
+    try {
+      await logoutService()
+    } catch {
+      /* ignora */
+    }
 
     user.value = null
     isAuthenticated.value = false
     accessToken.value = null
     refreshToken.value = null
     selectedEnterpriseId.value = null
+    clearSessionStorage()
+  }
 
-    sessionStorage.removeItem('isAuthenticated')
-    sessionStorage.removeItem('access_token')
-    sessionStorage.removeItem('refresh_token')
-    sessionStorage.removeItem('selected_enterprise_id')
-    sessionStorage.removeItem(USER_STORAGE_KEY)
+  const clearAuth = () => {
+    user.value = null
+    isAuthenticated.value = false
+    accessToken.value = null
+    refreshToken.value = null
+    selectedEnterpriseId.value = null
+    clearSessionStorage()
   }
 
   const setSelectedEnterprise = (enterpriseId) => {
@@ -114,6 +135,7 @@ export const useAuthStore = defineStore('auth', () => {
     selectedEnterpriseId,
     login,
     logout,
+    clearAuth,
     setSelectedEnterprise,
     can,
     canViewRoute,
