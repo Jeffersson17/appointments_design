@@ -1,37 +1,43 @@
 <script setup>
-import { computed, onMounted, ref } from 'vue'
-import ActionButtons from '@/components/common/ActionButtons.vue'
-import ConfirmationModal from '@/components/common/ConfirmationModal.vue'
-import DataTable from '@/components/common/DataTable.vue'
-import FormModal from '@/components/common/FormModal.vue'
-import Pagination from '@/components/common/Pagination.vue'
-import SearchInput from '@/components/common/SearchInput.vue'
-import { useTableData } from '@/composables/useTableData'
-import { createClient, getClients, removeClient } from '@/services/clientsService'
-import { getCompanies } from '@/services/companiesService'
+import { computed, onMounted, ref } from "vue";
+import ActionButtons from "@/components/common/ActionButtons.vue";
+import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
+import DataTable from "@/components/common/DataTable.vue";
+import FormModal from "@/components/common/FormModal.vue";
+import Pagination from "@/components/common/Pagination.vue";
+import SearchInput from "@/components/common/SearchInput.vue";
+import { useTableData } from "@/composables/useTableData";
+import {
+  createClient,
+  updateClient,
+  getClients,
+  removeClient,
+} from "@/services/clientsService";
 
-const clients = ref([])
-const companies = ref([])
-const loading = ref(true)
-const actionLoading = ref(false)
-const formLoading = ref(false)
-const formError = ref('')
-const selectedClient = ref(null)
-const showDeleteModal = ref(false)
-const showCreateModal = ref(false)
+const clients = ref([]);
+const loading = ref(true);
+const actionLoading = ref(false);
+const formLoading = ref(false);
+const formError = ref("");
+const selectedClient = ref(null);
+const showDeleteModal = ref(false);
+const showCreateModal = ref(false);
+const showEditModal = ref(false);
 
 const form = ref({
-  name: '',
-  phone: '',
-  companyName: '',
-})
+  first_name: "",
+  last_name: "",
+  phone_number: "",
+  email: "",
+  password: "",
+});
 
 const columns = [
-  { key: 'name', label: 'Nome' },
-  { key: 'phone', label: 'Telefone' },
-  { key: 'companyName', label: 'Empresa' },
-  { key: 'options', label: 'Opções', width: '56px' },
-]
+  { key: "name", label: "Nome" },
+  { key: "phone_number", label: "Telefone" },
+  { key: "company_name", label: "Empresa" },
+  { key: "options", label: "Opções", width: "56px" },
+];
 
 const {
   search,
@@ -40,102 +46,186 @@ const {
   totalItems,
   paginatedItems,
   goToPage,
-} = useTableData(clients, ['name', 'phone', 'companyName'])
-
-const companyOptions = computed(() =>
-  companies.value.map((item) => item.name).sort((a, b) => a.localeCompare(b)),
-)
+} = useTableData(clients, ["name", "phone_number", "company_name"]);
 
 const loadClients = async () => {
-  loading.value = true
+  loading.value = true;
   try {
-    const [clientList, companyList] = await Promise.all([
-      getClients(),
-      getCompanies(),
-    ])
-    clients.value = clientList
-    companies.value = companyList
+    const clientList = await getClients();
+    clients.value = clientList;
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 
-const handleEdit = (client) => {
-  window.alert(`Edição de "${client.name}" será integrada à API.`)
-}
+const formatPhone = (value) => {
+  const numbers = value.replace(/\D/g, "").slice(0, 11);
+  if (numbers.length <= 2) {
+    return `(${numbers}`;
+  }
+  if (numbers.length <= 7) {
+    return `(${numbers.slice(0, 2)}) ${numbers.slice(2)}`;
+  }
+  return `(${numbers.slice(0, 2)}) ${numbers.slice(2, 7)}-${numbers.slice(7)}`;
+};
+
+const allowOnlyNumbers = (event) => {
+  if (
+    !/[0-9]/.test(event.key) &&
+    !["Backspace", "Delete", "ArrowLeft", "ArrowRight", "Tab"].includes(
+      event.key,
+    )
+  ) {
+    event.preventDefault();
+  }
+};
 
 const requestDelete = (client) => {
-  selectedClient.value = client
-  showDeleteModal.value = true
-}
+  selectedClient.value = client;
+  showDeleteModal.value = true;
+};
 
 const closeModal = (force = false) => {
-  if (actionLoading.value && !force) return
-  showDeleteModal.value = false
-  selectedClient.value = null
-}
+  if (actionLoading.value && !force) return;
+  showDeleteModal.value = false;
+  selectedClient.value = null;
+};
 
 const openCreateModal = () => {
   form.value = {
-    name: '',
-    phone: '',
-    companyName: companyOptions.value[0] || '',
-  }
-  formError.value = ''
-  showCreateModal.value = true
-}
+    first_name: "",
+    last_name: "",
+    phone_number: "",
+    email: "",
+    password: "",
+  };
+  formError.value = "";
+  showCreateModal.value = true;
+};
+
+const openEditModal = (client) => {
+  form.value = {
+    first_name: client.first_name,
+    last_name: client.last_name,
+    phone_number: client.phone_number,
+    email: client.user.email,
+    password: "",
+  };
+  formError.value = "";
+  selectedClient.value = client;
+  showEditModal.value = true;
+};
 
 const closeCreateModal = (force = false) => {
-  if (formLoading.value && !force) return
-  showCreateModal.value = false
-  formError.value = ''
-}
+  if (formLoading.value && !force) return;
+  showCreateModal.value = false;
+  formError.value = "";
+};
+
+const closeEditModal = (force = false) => {
+  if (formLoading.value && !force) return;
+  showEditModal.value = false;
+  formError.value = "";
+};
 
 const submitCreate = async () => {
   if (
-    !form.value.name.trim() ||
-    !form.value.phone.trim() ||
-    !form.value.companyName.trim()
+    !form.value.first_name.trim() ||
+    !form.value.last_name.trim() ||
+    !form.value.phone_number.trim() ||
+    !form.value.email.trim() ||
+    !form.value.password.trim()
   ) {
-    formError.value = 'Preencha nome, telefone e empresa.'
-    return
+    formError.value =
+      "Todos os campos são obrigatórios. Por favor, preencha-os antes de continuar.";
+    return;
   }
 
-  formLoading.value = true
-  formError.value = ''
+  formLoading.value = true;
+  formError.value = "";
 
   try {
-    const created = await createClient(form.value)
-    clients.value = [created, ...clients.value]
-    closeCreateModal(true)
+    const createdClient = await createClient(form.value);
+    clients.value = [createdClient, ...clients.value];
+    closeCreateModal(true);
   } catch (err) {
-    formError.value = 'Não foi possível criar o cliente.'
-    console.error(err)
+    formError.value =
+      err?.response?.data?.phone_number?.[0] ||
+      "Não foi possível criar o cliente.";
   } finally {
-    formLoading.value = false
+    formLoading.value = false;
   }
-}
+};
+
+const submitEdit = async () => {
+  if (
+    !form.value.first_name.trim() ||
+    !form.value.last_name.trim() ||
+    !form.value.phone_number.trim() ||
+    !form.value.email.trim()
+  ) {
+    formError.value =
+      "Todos os campos são obrigatórios. Por favor, preencha-os antes de continuar.";
+    return;
+  }
+
+  formLoading.value = true;
+  formError.value = "";
+
+  const formData = new FormData()
+  formData.append("first_name", form.value.first_name.trim());
+  formData.append("last_name", form.value.last_name.trim());
+  formData.append("phone_number", form.value.phone_number.trim());
+  formData.append("email", form.value.email.trim());
+
+  if (form.value.password.trim()) {
+    formData.append("password", form.value.password.trim());
+  }
+
+  try {
+    const updatedClient = await updateClient(selectedClient.value.id, formData);
+    clients.value = clients.value.map((item) =>
+      item.id === updatedClient.id ? updatedClient : item,
+    );
+    closeEditModal(true);
+  } catch (err) {
+    formError.value =
+      err?.response?.data?.detail ||
+      err?.response?.data?.phone_number?.[0] ||
+      err?.response?.data?.email?.[0] ||
+      err?.response?.data?.first_name?.[0] ||
+      err?.response?.data?.last_name?.[0] ||
+      "Não foi possível atualizar o cliente.";
+  } finally {
+    formLoading.value = false;
+  }
+};
 
 const deleteMessage = computed(() => {
-  const name = selectedClient.value?.name ?? 'este cliente'
-  return `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`
-})
+  const firstName = selectedClient.value?.first_name ?? "este cliente";
+  const lastName = selectedClient.value?.last_name ?? "";
+  return `Tem certeza que deseja excluir "${firstName} ${lastName}"? Esta ação não pode ser desfeita.`;
+});
 
 const confirmDelete = async () => {
-  if (!selectedClient.value) return
-  actionLoading.value = true
+  if (!selectedClient.value) return;
+  actionLoading.value = true;
   try {
-    await removeClient(selectedClient.value.id)
+    await removeClient(selectedClient.value.id);
     clients.value = clients.value.filter(
       (item) => item.id !== selectedClient.value.id,
-    )
-    closeModal(true)
+    );
+    closeModal(true);
+  } catch (err) {
+    const messageError =
+      err?.response?.data?.detail || "Não foi possível excluir o cliente.";
+    window.alert(messageError);
   } finally {
-    actionLoading.value = false
+    actionLoading.value = false;
   }
-}
+};
 
-onMounted(loadClients)
+onMounted(loadClients);
 </script>
 
 <template>
@@ -145,7 +235,11 @@ onMounted(loadClients)
         <h2 class="page__title">Clientes</h2>
         <p class="page__subtitle">Gerencie os clientes das barbearias.</p>
       </div>
-      <button type="button" class="btn btn--primary page__action" @click="openCreateModal">
+      <button
+        type="button"
+        class="btn btn--primary page__action"
+        @click="openCreateModal"
+      >
         Novo cliente
       </button>
     </header>
@@ -159,11 +253,19 @@ onMounted(loadClients)
       </div>
 
       <DataTable :columns="columns" :rows="paginatedItems" :loading="loading">
+        <template #cell-name="{ row }">
+          <span>{{ row.first_name }} {{ row.last_name }}</span>
+        </template>
+        <template #cell-phone_number="{ row }">
+          <span class="table__cell--monospace">{{
+            formatPhone(row.phone_number)
+          }}</span>
+        </template>
+        <template #cell-company_name="{ row }">
+          <span>{{ row.enterprise.company_name }}</span>
+        </template>
         <template #cell-options="{ row }">
-          <ActionButtons
-            @edit="handleEdit(row)"
-            @delete="requestDelete(row)"
-          />
+          <ActionButtons @edit="openEditModal(row)" @delete="requestDelete(row)" />
         </template>
       </DataTable>
 
@@ -187,39 +289,130 @@ onMounted(loadClients)
       @cancel="closeCreateModal"
     >
       <div class="field">
-        <label for="client-name">Nome</label>
+        <label for="create-client-name">Nome</label>
         <input
-          id="client-name"
-          v-model="form.name"
+          id="create-client-name"
+          v-model="form.first_name"
           type="text"
           placeholder="Ex: Ricardo Oliveira"
           required
         />
       </div>
-
       <div class="field">
-        <label for="client-phone">Telefone</label>
+        <label for="create-client-last-name">Sobrenome</label>
         <input
-          id="client-phone"
-          v-model="form.phone"
-          type="tel"
-          placeholder="Ex: (11) 98765-4321"
+          id="create-client-last-name"
+          v-model="form.last_name"
+          type="text"
+          placeholder="Ex: Silva"
           required
         />
       </div>
-
       <div class="field">
-        <label for="client-company">Empresa</label>
-        <select id="client-company" v-model="form.companyName" required>
-          <option disabled value="">Selecione a empresa</option>
-          <option
-            v-for="name in companyOptions"
-            :key="name"
-            :value="name"
-          >
-            {{ name }}
-          </option>
-        </select>
+        <label for="create-client-phone">Telefone</label>
+        <input
+          id="create-client-phone"
+          :value="formatPhone(form.phone_number)"
+          type="tel"
+          inputmode="numeric"
+          maxlength="15"
+          placeholder="Ex: (99) 99999-9999"
+          @input="
+            form.phone_number = $event.target.value
+              .replace(/\D/g, '')
+              .slice(0, 11)
+          "
+          @keydown="allowOnlyNumbers"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="create-client-email">Email</label>
+        <input
+          id="create-client-email"
+          v-model="form.email"
+          type="email"
+          placeholder="Ex: ricardo.oliveira@gmail.com"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="create-client-password">Senha</label>
+        <input
+          id="create-client-password"
+          v-model="form.password"
+          type="password"
+          placeholder="Ex: Digite uma senha"
+          required
+        />
+      </div>
+    </FormModal>
+
+    <FormModal
+      :open="showEditModal"
+      title="Editar cliente"
+      submit-label="Salvar alterações"
+      :loading="formLoading"
+      :error="formError"
+      @submit="submitEdit"
+      @cancel="closeEditModal"
+    >
+      <div class="field">
+        <label for="edit-client-name">Nome</label>
+        <input
+          id="edit-client-name"
+          v-model="form.first_name"
+          type="text"
+          placeholder="Ex: Ricardo Oliveira"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-last-name">Sobrenome</label>
+        <input
+          id="edit-client-last-name"
+          v-model="form.last_name"
+          type="text"
+          placeholder="Ex: Silva"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-phone">Telefone</label>
+        <input
+          id="edit-client-phone"
+          :value="formatPhone(form.phone_number)"
+          type="tel"
+          inputmode="numeric"
+          maxlength="15"
+          placeholder="Ex: (99) 99999-9999"
+          @input="
+            form.phone_number = $event.target.value
+              .replace(/\D/g, '')
+              .slice(0, 11)
+          "
+          @keydown="allowOnlyNumbers"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-email">Email</label>
+        <input
+          id="edit-client-email"
+          v-model="form.email"
+          type="email"
+          placeholder="Ex: ricardo.oliveira@gmail.com"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-password">Senha</label>
+        <input
+          id="edit-client-password"
+          v-model="form.password"
+          type="password"
+          placeholder="Ex: Digite uma senha"
+        />
       </div>
     </FormModal>
 
