@@ -19,9 +19,11 @@ const showDeleteModal = ref(false)
 const showCreateModal = ref(false)
 
 const form = ref({
-  name: '',
+  first_name: '',
+  last_name: '',
   phone_number: '',
-  company_name: '',
+  email: '',
+  password: '',
 })
 
 const columns = [
@@ -67,9 +69,11 @@ const closeModal = (force = false) => {
 
 const openCreateModal = () => {
   form.value = {
-    name: '',
+    first_name: '',
+    last_name: '',
     phone_number: '',
-    company_name: companyOptions.value[0] || '',
+    email: '',
+    password: '',
   }
   formError.value = ''
   showCreateModal.value = true
@@ -83,11 +87,13 @@ const closeCreateModal = (force = false) => {
 
 const submitCreate = async () => {
   if (
-    !form.value.name.trim() ||
+    !form.value.first_name.trim() ||
+    !form.value.last_name.trim() ||
     !form.value.phone_number.trim() ||
-    !form.value.company_name.trim()
+    !form.value.email.trim() ||
+    !form.value.password.trim()
   ) {
-    formError.value = 'Preencha nome, telefone e empresa.'
+    formError.value = 'Todos os campos são obrigatórios. Por favor, preencha-os antes de continuar.'
     return
   }
 
@@ -95,8 +101,8 @@ const submitCreate = async () => {
   formError.value = ''
 
   try {
-    const created = await createClient(form.value)
-    clients.value = [created, ...clients.value]
+    const createdClient = await createClient(form.value)
+    clients.value = [createdClient, ...clients.value]
     closeCreateModal(true)
   } catch (err) {
     formError.value = 'Não foi possível criar o cliente.'
@@ -189,13 +195,22 @@ onMounted(loadClients)
         <label for="client-name">Nome</label>
         <input
           id="client-name"
-          v-model="form.name"
+          v-model="form.first_name"
           type="text"
           placeholder="Ex: Ricardo Oliveira"
           required
         />
       </div>
-
+      <div class="field">
+        <label for="client-last-name">Sobrenome</label>
+        <input
+          id="client-last-name"
+          v-model="form.last_name"
+          type="text"
+          placeholder="Ex: Silva"
+          required
+        />
+      </div>
       <div class="field">
         <label for="client-phone">Telefone</label>
         <input
@@ -206,19 +221,25 @@ onMounted(loadClients)
           required
         />
       </div>
-
       <div class="field">
-        <label for="client-company">Empresa</label>
-        <select id="client-company" v-model="form.company_name" required>
-          <option disabled value="">Selecione a empresa</option>
-          <option
-            v-for="name in companyOptions"
-            :key="name"
-            :value="name"
-          >
-            {{ name }}
-          </option>
-        </select>
+        <label for="client-email">Email</label>
+        <input
+          id="client-email"
+          v-model="form.email"
+          type="email"
+          placeholder="Ex: ricardo.oliveira@gmail.com"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="client-password">Senha</label>
+        <input
+          id="client-password"
+          v-model="form.password"
+          type="password"
+          placeholder="Ex: Digite uma senha"
+          required
+        />
       </div>
     </FormModal>
 

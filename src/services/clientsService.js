@@ -1,4 +1,5 @@
 import { fetchClients, deleteClient } from '@/api/clients'
+import { createClient as createClientRequest } from '@/api/clients'
 
 let clients = []
 
@@ -17,13 +18,5 @@ export const removeClient = async (id) => {
 
 export const createClient = async (payload) => {
   await delay(250)
-  const client = {
-    id: Date.now(),
-    name: payload.name.trim(),
-    phone: payload.phone.trim(),
-    companyName: payload.companyName.trim(),
-  }
-  clients = [client, ...clients]
-  // return (await createClientRequest(payload)).data
-  return { ...client }
+  return (await createClientRequest(payload)).data
 }
