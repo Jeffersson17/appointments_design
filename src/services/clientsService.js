@@ -1,14 +1,12 @@
-import { mockClients } from '@/mocks/clients'
-// import { fetchClients, deleteClient } from '@/api/clients'
+import { fetchClients, deleteClient } from '@/api/clients'
 
-let clients = mockClients.map((item) => ({ ...item }))
+let clients = []
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getClients = async () => {
   await delay()
-  // return (await fetchClients()).data
-  return clients.map((item) => ({ ...item }))
+  return (await fetchClients()).data
 }
 
 export const removeClient = async (id) => {

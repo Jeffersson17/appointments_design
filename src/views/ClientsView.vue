@@ -8,10 +8,8 @@ import Pagination from '@/components/common/Pagination.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
 import { useTableData } from '@/composables/useTableData'
 import { createClient, getClients, removeClient } from '@/services/clientsService'
-import { getCompanies } from '@/services/companiesService'
 
 const clients = ref([])
-const companies = ref([])
 const loading = ref(true)
 const actionLoading = ref(false)
 const formLoading = ref(false)
@@ -22,14 +20,14 @@ const showCreateModal = ref(false)
 
 const form = ref({
   name: '',
-  phone: '',
-  companyName: '',
+  phone_number: '',
+  company_name: '',
 })
 
 const columns = [
   { key: 'name', label: 'Nome' },
-  { key: 'phone', label: 'Telefone' },
-  { key: 'companyName', label: 'Empresa' },
+  { key: 'phone_number', label: 'Telefone' },
+  { key: 'company_name', label: 'Empresa' },
   { key: 'options', label: 'Opções', width: '56px' },
 ]
 
@@ -40,21 +38,13 @@ const {
   totalItems,
   paginatedItems,
   goToPage,
-} = useTableData(clients, ['name', 'phone', 'companyName'])
-
-const companyOptions = computed(() =>
-  companies.value.map((item) => item.name).sort((a, b) => a.localeCompare(b)),
-)
+} = useTableData(clients, ['name', 'phone_number', 'company_name'])
 
 const loadClients = async () => {
   loading.value = true
   try {
-    const [clientList, companyList] = await Promise.all([
-      getClients(),
-      getCompanies(),
-    ])
+    const clientList = await getClients()
     clients.value = clientList
-    companies.value = companyList
   } finally {
     loading.value = false
   }
@@ -78,8 +68,8 @@ const closeModal = (force = false) => {
 const openCreateModal = () => {
   form.value = {
     name: '',
-    phone: '',
-    companyName: companyOptions.value[0] || '',
+    phone_number: '',
+    company_name: companyOptions.value[0] || '',
   }
   formError.value = ''
   showCreateModal.value = true
@@ -94,8 +84,8 @@ const closeCreateModal = (force = false) => {
 const submitCreate = async () => {
   if (
     !form.value.name.trim() ||
-    !form.value.phone.trim() ||
-    !form.value.companyName.trim()
+    !form.value.phone_number.trim() ||
+    !form.value.company_name.trim()
   ) {
     formError.value = 'Preencha nome, telefone e empresa.'
     return
@@ -159,6 +149,15 @@ onMounted(loadClients)
       </div>
 
       <DataTable :columns="columns" :rows="paginatedItems" :loading="loading">
+        <template #cell-name="{ row }">
+          <span>{{ row.first_name }} {{ row.last_name }}</span>
+        </template>
+        <template #cell-phone_number="{ row }">
+          <span class="table__cell--monospace">{{ row.phone_number }}</span>
+        </template>
+        <template #cell-company_name="{ row }">
+          <span>{{ row.enterprise.company_name }}</span>
+        </template>
         <template #cell-options="{ row }">
           <ActionButtons
             @edit="handleEdit(row)"
@@ -201,7 +200,7 @@ onMounted(loadClients)
         <label for="client-phone">Telefone</label>
         <input
           id="client-phone"
-          v-model="form.phone"
+          v-model="form.phone_number"
           type="tel"
           placeholder="Ex: (11) 98765-4321"
           required
@@ -210,7 +209,7 @@ onMounted(loadClients)
 
       <div class="field">
         <label for="client-company">Empresa</label>
-        <select id="client-company" v-model="form.companyName" required>
+        <select id="client-company" v-model="form.company_name" required>
           <option disabled value="">Selecione a empresa</option>
           <option
             v-for="name in companyOptions"
