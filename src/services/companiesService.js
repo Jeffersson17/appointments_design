@@ -2,6 +2,7 @@ import {
   fetchCompanies,
   deleteCompany,
   updateCompany as updateCompanyRequest,
+  createCompany as createCompanyRequest,
 } from '@/api/companies'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -30,14 +31,5 @@ export const updateCompany = async (id, payload) => {
 
 export const createCompany = async (payload) => {
   await delay(250)
-  const company = {
-    id: Date.now(),
-    name: payload.name.trim(),
-    ownerName: payload.ownerName.trim(),
-    status: payload.status,
-    email: payload.email.trim(),
-    logoUrl: null,
-  }
-  // return (await createCompanyRequest(payload)).data
-  return { ...company }
+  return (await createCompanyRequest(payload)).data
 }

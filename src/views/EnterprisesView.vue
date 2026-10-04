@@ -108,9 +108,19 @@ const submitCreate = async () => {
   formLoading.value = true;
   formError.value = "";
 
+  const formData = new FormData();
+  formData.append("company_name", form.value.name.trim());
+  formData.append("owner_name", form.value.ownerName.trim());
+  formData.append("email", form.value.email.trim());
+  formData.append("password", form.value.password.trim());
+
+  if (form.value.logotipo instanceof File) {
+    formData.append("logotipo", form.value.logotipo);
+  }
+
   try {
-    const created = await createCompany(form.value);
-    companies.value = [created, ...companies.value];
+    const createdCompany = await createCompany(formData);
+    companies.value = [createdCompany, ...companies.value];
     closeCreateModal(true);
   } catch (err) {
     formError.value = "Não foi possível criar a empresa.";
@@ -146,9 +156,9 @@ const submitEdit = async () => {
   formError.value = "";
 
   const formData = new FormData();
-  formData.append("company_name", form.value.name);
-  formData.append("owner_name", form.value.ownerName);
-  formData.append("email", form.value.email);
+  formData.append("company_name", form.value.name.trim());
+  formData.append("owner_name", form.value.ownerName.trim());
+  formData.append("email", form.value.email.trim());
   formData.append("is_active", form.value.status);
 
   if (form.value.logotipo instanceof File) {
@@ -156,8 +166,8 @@ const submitEdit = async () => {
   }
 
   if (form.value.password.trim()) {
-    formData.append("password", form.value.password);
-  } 
+    formData.append("password", form.value.password.trim());
+  }
 
   try {
     const updated = await updateCompany(editingCompany.value.id, formData);
@@ -331,11 +341,36 @@ onMounted(loadCompanies);
       </div>
 
       <div class="field">
-        <label for="company-status">Status</label>
-        <select id="company-status" v-model="form.status">
-          <option :value="true">Ativa</option>
-          <option :value="false">Inativa</option>
-        </select>
+        <label for="company-email">Email</label>
+        <input
+          id="company-email"
+          v-model="form.email"
+          type="email"
+          autocomplete="email"
+          placeholder="contato@barbearia.com"
+          required
+        />
+      </div>
+
+      <div class="field">
+        <label for="company-password">Senha</label>
+        <input
+          id="company-password"
+          v-model="form.password"
+          type="password"
+          autocomplete="new-password"
+          placeholder="Digite uma senha para o proprietário da empresa"
+        />
+      </div>
+
+      <div class="field">
+        <label for="company-logo">Logotipo</label>
+        <input
+          id="company-logo"
+          type="file"
+          accept="image/*"
+          placeholder="URL da logotipo da empresa"
+        />
       </div>
     </FormModal>
 
