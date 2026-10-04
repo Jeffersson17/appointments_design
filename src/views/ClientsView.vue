@@ -9,6 +9,7 @@ import SearchInput from "@/components/common/SearchInput.vue";
 import { useTableData } from "@/composables/useTableData";
 import {
   createClient,
+  updateClient,
   getClients,
   removeClient,
 } from "@/services/clientsService";
@@ -21,6 +22,7 @@ const formError = ref("");
 const selectedClient = ref(null);
 const showDeleteModal = ref(false);
 const showCreateModal = ref(false);
+const showEditModal = ref(false);
 
 const form = ref({
   first_name: "",
@@ -78,10 +80,6 @@ const allowOnlyNumbers = (event) => {
   }
 };
 
-const handleEdit = (client) => {
-  window.alert(`Edição de "${client.name}" será integrada à API.`);
-};
-
 const requestDelete = (client) => {
   selectedClient.value = client;
   showDeleteModal.value = true;
@@ -105,9 +103,28 @@ const openCreateModal = () => {
   showCreateModal.value = true;
 };
 
+const openEditModal = (client) => {
+  form.value = {
+    first_name: client.first_name,
+    last_name: client.last_name,
+    phone_number: client.phone_number,
+    email: client.user.email,
+    password: "",
+  };
+  formError.value = "";
+  selectedClient.value = client;
+  showEditModal.value = true;
+};
+
 const closeCreateModal = (force = false) => {
   if (formLoading.value && !force) return;
   showCreateModal.value = false;
+  formError.value = "";
+};
+
+const closeEditModal = (force = false) => {
+  if (formLoading.value && !force) return;
+  showEditModal.value = false;
   formError.value = "";
 };
 
@@ -140,9 +157,54 @@ const submitCreate = async () => {
   }
 };
 
+const submitEdit = async () => {
+  if (
+    !form.value.first_name.trim() ||
+    !form.value.last_name.trim() ||
+    !form.value.phone_number.trim() ||
+    !form.value.email.trim()
+  ) {
+    formError.value =
+      "Todos os campos são obrigatórios. Por favor, preencha-os antes de continuar.";
+    return;
+  }
+
+  formLoading.value = true;
+  formError.value = "";
+
+  const formData = new FormData()
+  formData.append("first_name", form.value.first_name.trim());
+  formData.append("last_name", form.value.last_name.trim());
+  formData.append("phone_number", form.value.phone_number.trim());
+  formData.append("email", form.value.email.trim());
+
+  if (form.value.password.trim()) {
+    formData.append("password", form.value.password.trim());
+  }
+
+  try {
+    const updatedClient = await updateClient(selectedClient.value.id, formData);
+    clients.value = clients.value.map((item) =>
+      item.id === updatedClient.id ? updatedClient : item,
+    );
+    closeEditModal(true);
+  } catch (err) {
+    formError.value =
+      err?.response?.data?.detail ||
+      err?.response?.data?.phone_number?.[0] ||
+      err?.response?.data?.email?.[0] ||
+      err?.response?.data?.first_name?.[0] ||
+      err?.response?.data?.last_name?.[0] ||
+      "Não foi possível atualizar o cliente.";
+  } finally {
+    formLoading.value = false;
+  }
+};
+
 const deleteMessage = computed(() => {
-  const name = selectedClient.value?.name ?? "este cliente";
-  return `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`;
+  const firstName = selectedClient.value?.first_name ?? "este cliente";
+  const lastName = selectedClient.value?.last_name ?? "";
+  return `Tem certeza que deseja excluir "${firstName} ${lastName}"? Esta ação não pode ser desfeita.`;
 });
 
 const confirmDelete = async () => {
@@ -154,6 +216,10 @@ const confirmDelete = async () => {
       (item) => item.id !== selectedClient.value.id,
     );
     closeModal(true);
+  } catch (err) {
+    const messageError =
+      err?.response?.data?.detail || "Não foi possível excluir o cliente.";
+    window.alert(messageError);
   } finally {
     actionLoading.value = false;
   }
@@ -199,7 +265,7 @@ onMounted(loadClients);
           <span>{{ row.enterprise.company_name }}</span>
         </template>
         <template #cell-options="{ row }">
-          <ActionButtons @edit="handleEdit(row)" @delete="requestDelete(row)" />
+          <ActionButtons @edit="openEditModal(row)" @delete="requestDelete(row)" />
         </template>
       </DataTable>
 
@@ -223,9 +289,9 @@ onMounted(loadClients);
       @cancel="closeCreateModal"
     >
       <div class="field">
-        <label for="client-name">Nome</label>
+        <label for="create-client-name">Nome</label>
         <input
-          id="client-name"
+          id="create-client-name"
           v-model="form.first_name"
           type="text"
           placeholder="Ex: Ricardo Oliveira"
@@ -233,9 +299,9 @@ onMounted(loadClients);
         />
       </div>
       <div class="field">
-        <label for="client-last-name">Sobrenome</label>
+        <label for="create-client-last-name">Sobrenome</label>
         <input
-          id="client-last-name"
+          id="create-client-last-name"
           v-model="form.last_name"
           type="text"
           placeholder="Ex: Silva"
@@ -243,9 +309,9 @@ onMounted(loadClients);
         />
       </div>
       <div class="field">
-        <label for="client-phone">Telefone</label>
+        <label for="create-client-phone">Telefone</label>
         <input
-          id="client-phone"
+          id="create-client-phone"
           :value="formatPhone(form.phone_number)"
           type="tel"
           inputmode="numeric"
@@ -261,9 +327,9 @@ onMounted(loadClients);
         />
       </div>
       <div class="field">
-        <label for="client-email">Email</label>
+        <label for="create-client-email">Email</label>
         <input
-          id="client-email"
+          id="create-client-email"
           v-model="form.email"
           type="email"
           placeholder="Ex: ricardo.oliveira@gmail.com"
@@ -271,13 +337,81 @@ onMounted(loadClients);
         />
       </div>
       <div class="field">
-        <label for="client-password">Senha</label>
+        <label for="create-client-password">Senha</label>
         <input
-          id="client-password"
+          id="create-client-password"
           v-model="form.password"
           type="password"
           placeholder="Ex: Digite uma senha"
           required
+        />
+      </div>
+    </FormModal>
+
+    <FormModal
+      :open="showEditModal"
+      title="Editar cliente"
+      submit-label="Salvar alterações"
+      :loading="formLoading"
+      :error="formError"
+      @submit="submitEdit"
+      @cancel="closeEditModal"
+    >
+      <div class="field">
+        <label for="edit-client-name">Nome</label>
+        <input
+          id="edit-client-name"
+          v-model="form.first_name"
+          type="text"
+          placeholder="Ex: Ricardo Oliveira"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-last-name">Sobrenome</label>
+        <input
+          id="edit-client-last-name"
+          v-model="form.last_name"
+          type="text"
+          placeholder="Ex: Silva"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-phone">Telefone</label>
+        <input
+          id="edit-client-phone"
+          :value="formatPhone(form.phone_number)"
+          type="tel"
+          inputmode="numeric"
+          maxlength="15"
+          placeholder="Ex: (99) 99999-9999"
+          @input="
+            form.phone_number = $event.target.value
+              .replace(/\D/g, '')
+              .slice(0, 11)
+          "
+          @keydown="allowOnlyNumbers"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-email">Email</label>
+        <input
+          id="edit-client-email"
+          v-model="form.email"
+          type="email"
+          placeholder="Ex: ricardo.oliveira@gmail.com"
+          required
+        />
+      </div>
+      <div class="field">
+        <label for="edit-client-password">Senha</label>
+        <input
+          id="edit-client-password"
+          v-model="form.password"
+          type="password"
+          placeholder="Ex: Digite uma senha"
         />
       </div>
     </FormModal>
