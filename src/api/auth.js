@@ -1,4 +1,4 @@
 import api from './client'
 
 export const loginRequest = (credentials) =>
-  api.post('/login/', credentials)
+  api.post('/api/login/', credentials)

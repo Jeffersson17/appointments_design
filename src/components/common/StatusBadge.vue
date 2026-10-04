@@ -1,6 +1,5 @@
 <script setup>
 import { computed } from 'vue'
-import { COMPANY_STATUS, COMPANY_STATUS_LABELS } from '@/types/status'
 
 const props = defineProps({
   status: {
@@ -9,18 +8,14 @@ const props = defineProps({
   },
 })
 
-const label = computed(
-  () => COMPANY_STATUS_LABELS[props.status] ?? props.status,
-)
-
 const variant = computed(() =>
-  props.status === COMPANY_STATUS.ACTIVE ? 'success' : 'neutral',
+  props.status === true ? 'success' : 'neutral',
 )
 </script>
 
 <template>
   <span class="status-badge" :class="`status-badge--${variant}`">
-    {{ label }}
+    {{ props.status === true ? 'Ativa' : 'Inativa' }}
   </span>
 </template>
 
@@ -42,6 +37,6 @@ const variant = computed(() =>
 
 .status-badge--neutral {
   background: #e2e8f0;
-  color: #475569;
+  color: #cc0000;
 }
 </style>

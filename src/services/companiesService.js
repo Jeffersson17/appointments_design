@@ -1,51 +1,35 @@
-import { mockCompanies } from '@/mocks/companies'
-import { COMPANY_STATUS } from '@/types/status'
-// import { fetchCompanies, updateCompany, deleteCompany } from '@/api/companies'
-
-/**
- * Camada de dados de empresas.
- * Hoje usa mocks; troque pelas chamadas Axios quando a API estiver pronta.
- */
-let companies = mockCompanies.map((item) => ({ ...item }))
+import {
+  fetchCompanies,
+  deleteCompany,
+  updateCompany as updateCompanyRequest,
+  createCompany as createCompanyRequest,
+} from '@/api/companies'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getCompanies = async () => {
   await delay()
-  // return (await fetchCompanies()).data
-  return companies.map((item) => ({ ...item }))
+  return (await fetchCompanies()).data
 }
 
-export const toggleCompanyStatus = async (id) => {
+export const toggleCompanyStatus = async (id, company) => {
   await delay()
-  const company = companies.find((item) => item.id === id)
-  if (!company) throw new Error('Empresa não encontrada')
-
-  company.status =
-    company.status === COMPANY_STATUS.ACTIVE
-      ? COMPANY_STATUS.INACTIVE
-      : COMPANY_STATUS.ACTIVE
-
-  // await updateCompany(id, { status: company.status })
-  return { ...company }
+  return (
+    await updateCompanyRequest(id, { is_active: !company.user.is_active })
+  ).data
 }
 
 export const removeCompany = async (id) => {
   await delay()
-  companies = companies.filter((item) => item.id !== id)
-  // await deleteCompany(id)
+  await deleteCompany(id)
+}
+
+export const updateCompany = async (id, payload) => {
+  await delay()
+  return (await updateCompanyRequest(id, payload)).data
 }
 
 export const createCompany = async (payload) => {
   await delay(250)
-  const company = {
-    id: Date.now(),
-    name: payload.name.trim(),
-    ownerName: payload.ownerName.trim(),
-    status: payload.status || COMPANY_STATUS.ACTIVE,
-    logoUrl: null,
-  }
-  companies = [company, ...companies]
-  // return (await createCompanyRequest(payload)).data
-  return { ...company }
+  return (await createCompanyRequest(payload)).data
 }

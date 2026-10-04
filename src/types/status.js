@@ -1,13 +1,3 @@
-export const COMPANY_STATUS = {
-  ACTIVE: 'ativa',
-  INACTIVE: 'inativa',
-}
-
-export const COMPANY_STATUS_LABELS = {
-  [COMPANY_STATUS.ACTIVE]: 'Ativa',
-  [COMPANY_STATUS.INACTIVE]: 'Inativa',
-}
-
 export const APPOINTMENT_STATUS = {
   CONFIRMED: 'confirmed',
   COMPLETED: 'completed',
