@@ -269,7 +269,7 @@ onMounted(loadCompanies);
           <div class="company-cell">
             <UserAvatar
               :name="row.company_name"
-              :src="row.logoUrl"
+              :src="row.logotipo"
               size="company"
             />
             <span>{{ row.company_name }}</span>
