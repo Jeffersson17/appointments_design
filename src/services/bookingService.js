@@ -1,8 +1,6 @@
-import { mockBaseSlots, getBusySlotIndexes } from '@/mocks/slots'
-import { mockServices } from '@/mocks/services'
 import { APPOINTMENT_STATUS } from '@/types/status'
 // import { fetchAppointments, createAppointment } from '@/api/appointments'
-// import { fetchServices } from '@/api/services'
+import { fetchServices } from '@/api/services'
 
 const STORAGE_KEY = 'client_bookings'
 const delay = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -81,10 +79,7 @@ export const getAvailableSlots = async (isoDate) => {
 
 export const getBookingServices = async () => {
   await delay()
-  // return (await fetchServices()).data
-  return mockServices
-    .filter((service) => service.id <= 8)
-    .map((item) => ({ ...item }))
+  return (await fetchServices()).data
 }
 
 export const getActiveBooking = async (clientId) => {
