@@ -1,20 +1,15 @@
-import { mockServices } from '@/mocks/services'
-// import { fetchServices, deleteService } from '@/api/services'
-
-let services = mockServices.map((item) => ({ ...item }))
+import { fetchServices, deleteService } from '@/api/services'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getServices = async () => {
   await delay()
-  // return (await fetchServices()).data
-  return services.map((item) => ({ ...item }))
+  return (await fetchServices()).data
 }
 
 export const removeService = async (id) => {
   await delay()
-  services = services.filter((item) => item.id !== id)
-  // await deleteService(id)
+  await deleteService(id)
 }
 
 export const createService = async (payload) => {

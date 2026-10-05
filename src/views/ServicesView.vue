@@ -22,13 +22,14 @@ const showCreateModal = ref(false)
 const form = ref({
   name: '',
   price: '',
-  durationMinutes: '',
+  duration: '',
 })
 
 const columns = [
-  { key: 'name', label: 'Corte' },
+  { key: 'service_name', label: 'Corte' },
   { key: 'price', label: 'Valor' },
-  { key: 'durationMinutes', label: 'Duração' },
+  { key: 'duration', label: 'Duração' },
+  { key: 'enterprise', label: 'Empresa' },
   { key: 'options', label: 'Opções', width: '56px' },
 ]
 
@@ -39,19 +40,22 @@ const {
   totalItems,
   paginatedItems,
   goToPage,
-} = useTableData(services, ['name'])
+} = useTableData(services, ['service_name'])
 
 const loadServices = async () => {
   loading.value = true
   try {
     services.value = await getServices()
+    console.log('Serviços carregados:', services.value)
+  } catch (err) {
+    console.error(err)
   } finally {
     loading.value = false
   }
 }
 
 const handleEdit = (service) => {
-  window.alert(`Edição de "${service.name}" será integrada à API.`)
+  window.alert(`Edição de "${service.service_name}" será integrada à API.`)
 }
 
 const requestDelete = (service) => {
@@ -120,7 +124,7 @@ const submitCreate = async () => {
 }
 
 const deleteMessage = computed(() => {
-  const name = selectedService.value?.name ?? 'este serviço'
+  const name = selectedService.value?.service_name ?? 'este serviço'
   return `Tem certeza que deseja excluir "${name}"? Esta ação não pode ser desfeita.`
 })
 
@@ -163,8 +167,12 @@ onMounted(loadServices)
           {{ formatCurrency(row.price) }}
         </template>
 
-        <template #cell-durationMinutes="{ row }">
-          {{ formatDuration(row.durationMinutes) }}
+        <template #cell-duration="{ row }">
+          {{ formatDuration(row.duration) }}
+        </template>
+
+        <template #cell-enterprise="{ row }">
+          {{ row.enterprise?.company_name || '—' }}
         </template>
 
         <template #cell-options="{ row }">
