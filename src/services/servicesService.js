@@ -1,4 +1,5 @@
 import { fetchServices, deleteService } from '@/api/services'
+import { createService as createServiceRequest } from '@/api/services'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
@@ -14,13 +15,5 @@ export const removeService = async (id) => {
 
 export const createService = async (payload) => {
   await delay(250)
-  const service = {
-    id: Date.now(),
-    name: payload.name.trim(),
-    price: Number(payload.price),
-    durationMinutes: Number(payload.durationMinutes),
-  }
-  services = [service, ...services]
-  // return (await createServiceRequest(payload)).data
-  return { ...service }
+  return (await createServiceRequest(payload)).data
 }
