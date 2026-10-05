@@ -11,6 +11,7 @@ import {
   createService,
   getServices,
   removeService,
+  updateService,
 } from "@/services/servicesService";
 import { formatCurrency, formatDuration } from "@/utils/format";
 
@@ -22,9 +23,10 @@ const formError = ref("");
 const selectedService = ref(null);
 const showDeleteModal = ref(false);
 const showCreateModal = ref(false);
+const showEditModal = ref(false);
 
-const form = ref({
-  service_name: "",
+const emptyForm = () => ({
+  name: "",
   price: "",
   hours: "",
   minutes: "",
@@ -33,10 +35,21 @@ const form = ref({
   service_image: null,
 });
 
+const form = ref(emptyForm());
+
 const padTimePart = (value) => String(value ?? "").padStart(2, "0");
 
 const updateDuration = () => {
   form.value.duration = `${padTimePart(form.value.hours)}:${padTimePart(form.value.minutes)}:${padTimePart(form.value.seconds)}`;
+};
+
+const parseDuration = (duration = "") => {
+  const [hours = "", minutes = "", seconds = ""] = String(duration).split(":");
+  return { hours, minutes, seconds };
+};
+
+const onImageChange = (event) => {
+  form.value.service_image = event.target.files?.[0] ?? null;
 };
 
 const columns = [
@@ -60,16 +73,11 @@ const loadServices = async () => {
   loading.value = true;
   try {
     services.value = await getServices();
-    console.log("Serviços carregados:", services.value);
   } catch (err) {
     console.error(err);
   } finally {
     loading.value = false;
   }
-};
-
-const handleEdit = (service) => {
-  window.alert(`Edição de "${service.service_name}" será integrada à API.`);
 };
 
 const requestDelete = (service) => {
@@ -84,17 +92,25 @@ const closeModal = (force = false) => {
 };
 
 const openCreateModal = () => {
+  form.value = emptyForm();
+  formError.value = "";
+  showCreateModal.value = true;
+};
+
+const openEditModal = (service) => {
+  const { hours, minutes, seconds } = parseDuration(service.duration);
+  selectedService.value = service;
   form.value = {
-    name: "",
-    price: "",
-    hours: "",
-    minutes: "",
-    seconds: "",
-    duration: "",
+    name: service.service_name ?? "",
+    price: service.price ?? "",
+    hours,
+    minutes,
+    seconds,
+    duration: service.duration ?? "",
     service_image: null,
   };
   formError.value = "";
-  showCreateModal.value = true;
+  showEditModal.value = true;
 };
 
 const closeCreateModal = (force = false) => {
@@ -103,40 +119,85 @@ const closeCreateModal = (force = false) => {
   formError.value = "";
 };
 
-const submitCreate = async () => {
+const closeEditModal = (force = false) => {
+  if (formLoading.value && !force) return;
+  showEditModal.value = false;
+  selectedService.value = null;
+  formError.value = "";
+};
+
+const validateForm = () => {
   const price = Number(form.value.price);
   updateDuration();
 
   if (!form.value.name.trim()) {
     formError.value = "Informe o nome do corte.";
-    return;
+    return null;
   }
 
   if (!Number.isFinite(price) || price <= 0) {
     formError.value = "Informe um valor válido.";
-    return;
+    return null;
   }
 
   if (form.value.duration === "00:00:00") {
     formError.value = "Informe a duração.";
-    return;
+    return null;
   }
+
+  const payload = {
+    service_name: form.value.name.trim(),
+    price,
+    duration: form.value.duration,
+  };
+
+  if (form.value.service_image instanceof File) {
+    payload.service_image = form.value.service_image;
+  }
+
+  return payload;
+};
+
+const submitCreate = async () => {
+  const payload = validateForm();
+  if (!payload) return;
 
   formLoading.value = true;
   formError.value = "";
 
   try {
-    const createdService = await createService({
-      service_name: form.value.name,
-      price,
-      duration: form.value.duration,
-      service_image: form.value.service_image,
-    });
+    const createdService = await createService(payload);
     services.value = [createdService, ...services.value];
     closeCreateModal(true);
   } catch (err) {
     console.error(err);
     formError.value = "Ocorreu um erro ao criar o serviço.";
+  } finally {
+    formLoading.value = false;
+  }
+};
+
+const submitEdit = async () => {
+  if (!selectedService.value) return;
+
+  const payload = validateForm();
+  if (!payload) return;
+
+  formLoading.value = true;
+  formError.value = "";
+
+  try {
+    const updatedService = await updateService(
+      selectedService.value.id,
+      payload,
+    );
+    services.value = services.value.map((item) =>
+      item.id === updatedService.id ? updatedService : item,
+    );
+    closeEditModal(true);
+  } catch (err) {
+    console.error(err);
+    formError.value = "Ocorreu um erro ao atualizar este serviço.";
   } finally {
     formLoading.value = false;
   }
@@ -201,7 +262,10 @@ onMounted(loadServices);
         </template>
 
         <template #cell-options="{ row }">
-          <ActionButtons @edit="handleEdit(row)" @delete="requestDelete(row)" />
+          <ActionButtons
+            @edit="openEditModal(row)"
+            @delete="requestDelete(row)"
+          />
         </template>
       </DataTable>
 
@@ -226,9 +290,9 @@ onMounted(loadServices);
     >
       <div class="field-row">
         <div class="field">
-          <label for="service-name">Corte</label>
+          <label for="create-service-name">Corte</label>
           <input
-            id="service-name"
+            id="create-service-name"
             v-model="form.name"
             type="text"
             placeholder="Ex: Corte Masculino"
@@ -237,9 +301,9 @@ onMounted(loadServices);
         </div>
 
         <div class="field">
-          <label for="service-price">Valor (R$)</label>
+          <label for="create-service-price">Valor (R$)</label>
           <input
-            id="service-price"
+            id="create-service-price"
             v-model="form.price"
             type="number"
             min="1"
@@ -254,9 +318,9 @@ onMounted(loadServices);
         <span class="field__label">Duração</span>
         <div class="duration-fields">
           <div class="field">
-            <label for="service-hours">Horas</label>
+            <label for="create-service-hours">Horas</label>
             <input
-              id="service-hours"
+              id="create-service-hours"
               v-model="form.hours"
               type="number"
               min="0"
@@ -267,9 +331,9 @@ onMounted(loadServices);
           </div>
 
           <div class="field">
-            <label for="service-minutes">Minutos</label>
+            <label for="create-service-minutes">Minutos</label>
             <input
-              id="service-minutes"
+              id="create-service-minutes"
               v-model="form.minutes"
               type="number"
               min="0"
@@ -280,9 +344,9 @@ onMounted(loadServices);
           </div>
 
           <div class="field">
-            <label for="service-seconds">Segundos</label>
+            <label for="create-service-seconds">Segundos</label>
             <input
-              id="service-seconds"
+              id="create-service-seconds"
               v-model="form.seconds"
               type="number"
               min="0"
@@ -295,11 +359,102 @@ onMounted(loadServices);
       </div>
 
       <div class="field">
-        <label for="service-image">Imagem do serviço</label>
+        <label for="create-service-image">Imagem do serviço</label>
         <input
-          id="service-image"
+          id="create-service-image"
           type="file"
           accept="image/*"
+          @change="onImageChange"
+        />
+      </div>
+    </FormModal>
+
+    <FormModal
+      :open="showEditModal"
+      title="Editar serviço"
+      submit-label="Salvar alterações"
+      :loading="formLoading"
+      :error="formError"
+      @submit="submitEdit"
+      @cancel="closeEditModal"
+    >
+      <div class="field-row">
+        <div class="field">
+          <label for="edit-service-name">Corte</label>
+          <input
+            id="edit-service-name"
+            v-model="form.name"
+            type="text"
+            placeholder="Ex: Corte Masculino"
+            required
+          />
+        </div>
+
+        <div class="field">
+          <label for="edit-service-price">Valor (R$)</label>
+          <input
+            id="edit-service-price"
+            v-model="form.price"
+            type="number"
+            min="1"
+            step="0.01"
+            placeholder="45"
+            required
+          />
+        </div>
+      </div>
+
+      <div class="field">
+        <span class="field__label">Duração</span>
+        <div class="duration-fields">
+          <div class="field">
+            <label for="edit-service-hours">Horas</label>
+            <input
+              id="edit-service-hours"
+              v-model="form.hours"
+              type="number"
+              min="0"
+              max="23"
+              placeholder="00"
+              @input="updateDuration"
+            />
+          </div>
+
+          <div class="field">
+            <label for="edit-service-minutes">Minutos</label>
+            <input
+              id="edit-service-minutes"
+              v-model="form.minutes"
+              type="number"
+              min="0"
+              max="59"
+              placeholder="00"
+              @input="updateDuration"
+            />
+          </div>
+
+          <div class="field">
+            <label for="edit-service-seconds">Segundos</label>
+            <input
+              id="edit-service-seconds"
+              v-model="form.seconds"
+              type="number"
+              min="0"
+              max="59"
+              placeholder="00"
+              @input="updateDuration"
+            />
+          </div>
+        </div>
+      </div>
+
+      <div class="field">
+        <label for="edit-service-image">Imagem do serviço</label>
+        <input
+          id="edit-service-image"
+          type="file"
+          accept="image/*"
+          @change="onImageChange"
         />
       </div>
     </FormModal>
