@@ -77,7 +77,7 @@ onMounted(loadHistory)
           </div>
           <div>
             <dt>Duração</dt>
-            <dd>{{ formatDuration(item.durationMinutes) }}</dd>
+            <dd>{{ formatDuration(item.duration) }}</dd>
           </div>
           <div>
             <dt>Valor</dt>

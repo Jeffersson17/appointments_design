@@ -1,10 +1,15 @@
-import { fetchAppointments, deleteAppointment } from '@/api/appointments'
+import { fetchAppointments, deleteAppointment, fetchAppointment } from '@/api/appointments'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getAppointments = async () => {
   await delay()
   return (await fetchAppointments()).data
+}
+
+export const getAppointment = async (id) => {
+  await delay(250)
+  return (await fetchAppointment(id)).data
 }
 
 export const removeAppointment = async (id) => {

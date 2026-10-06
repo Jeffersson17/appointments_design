@@ -152,6 +152,8 @@ const submitCreate = async () => {
     formError.value =
       err?.response?.data?.phone_number?.[0] ||
       "Não foi possível criar o cliente.";
+
+    console.log(err)
   } finally {
     formLoading.value = false;
   }

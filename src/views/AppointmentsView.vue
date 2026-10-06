@@ -79,14 +79,8 @@ const clearFilters = () => {
   resetPage()
 }
 
-const statusLabels = {
-  SCHEDULED: 'Agendado',
-  COMPLETED: 'Concluído',
-  CANCELLED: 'Cancelado'
-}
-
 const formatStatusAppointments = (status) => {
-  return statusLabels[status] ?? status
+  return APPOINTMENT_STATUS_LABELS[status] ?? status
 }
 
 onMounted(loadAppointments)

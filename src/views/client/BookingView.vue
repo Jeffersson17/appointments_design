@@ -154,7 +154,7 @@ const confirmBooking = async () => {
       date: selectedDate.value,
       time: selectedTime.value,
       price: selectedService.value.price,
-      durationMinutes: selectedService.value.durationMinutes,
+      duration: selectedService.value.duration,
     })
     resetFlow()
     feedback.value = 'Agendamento confirmado com sucesso.'
@@ -187,10 +187,10 @@ const confirmAction = async () => {
 
   try {
     if (modal.value.action === 'complete') {
-      await completeBooking(activeBooking.value.id, auth.user?.id)
+      await completeBooking(activeBooking.value.id)
       feedback.value = 'Agendamento concluído.'
     } else {
-      await cancelBooking(activeBooking.value.id, auth.user?.id)
+      await cancelBooking(activeBooking.value.id)
       feedback.value = 'Agendamento cancelado.'
     }
 
@@ -243,7 +243,7 @@ onMounted(loadActiveBooking)
         </li>
         <li>
           <span>Duração</span>
-          <strong>{{ formatDuration(activeBooking.durationMinutes) }}</strong>
+          <strong>{{ formatDuration(activeBooking.duration) }}</strong>
         </li>
         <li>
           <span>Valor</span>
@@ -346,7 +346,7 @@ onMounted(loadActiveBooking)
           >
             <div>
               <strong>{{ service.name }}</strong>
-              <span>{{ formatDuration(service.durationMinutes) }}</span>
+              <span>{{ formatDuration(service.duration) }}</span>
             </div>
             <em>{{ formatCurrency(service.price) }}</em>
           </button>
