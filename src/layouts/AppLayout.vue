@@ -1,11 +1,11 @@
 <script setup>
-import { storeToRefs } from 'pinia'
-import AppSidebar from '@/components/layout/AppSidebar.vue'
-import AppTopbar from '@/components/layout/AppTopbar.vue'
-import { useSidebarStore } from '@/stores/sidebar'
+import { storeToRefs } from "pinia";
+import AppSidebar from "@/components/layout/AppSidebar.vue";
+import AppTopbar from "@/components/layout/AppTopbar.vue";
+import { useSidebarStore } from "@/stores/sidebar";
 
-const sidebar = useSidebarStore()
-const { isCollapsed } = storeToRefs(sidebar)
+const sidebar = useSidebarStore();
+const { isCollapsed } = storeToRefs(sidebar);
 </script>
 
 <template>
@@ -23,8 +23,13 @@ const { isCollapsed } = storeToRefs(sidebar)
 <style scoped>
 .app-shell {
   min-height: 100vh;
+  font-family: var(--font-display);
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.08), transparent 28%),
+    radial-gradient(
+      circle at top right,
+      rgba(37, 99, 235, 0.08),
+      transparent 28%
+    ),
     linear-gradient(180deg, #f7f9fc 0%, var(--color-bg) 40%);
 }
 
