@@ -3,9 +3,28 @@ export const formatCurrency = (value) =>
 
 export const formatDateBR = (isoDate) => {
   if (!isoDate) return "";
-  const [year, month, day] = isoDate.split("-");
+  const datePart = String(isoDate).slice(0, 10);
+  const [year, month, day] = datePart.split("-");
   if (!year || !month || !day) return isoDate;
   return `${day}/${month}/${year}`;
+};
+
+export const formatTimeBR = (isoDateTime) => {
+  if (!isoDateTime) return "";
+  const date = new Date(isoDateTime);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleTimeString("pt-BR", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
+export const formatDateTimeBR = (isoDateTime) => {
+  if (!isoDateTime) return "";
+  const date = formatDateBR(isoDateTime);
+  const time = formatTimeBR(isoDateTime);
+  if (!date || !time) return isoDateTime;
+  return `${date} às ${time}`;
 };
 
 export const formatDuration = (duration) => {

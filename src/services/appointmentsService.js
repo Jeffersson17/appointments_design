@@ -1,14 +1,15 @@
-import { mockAppointments } from '@/mocks/appointments'
-// import { fetchAppointments, deleteAppointment } from '@/api/appointments'
-
-let appointments = mockAppointments.map((item) => ({ ...item }))
+import { fetchAppointments, deleteAppointment, fetchAppointment } from '@/api/appointments'
 
 const delay = (ms = 200) => new Promise((resolve) => setTimeout(resolve, ms))
 
 export const getAppointments = async () => {
   await delay()
-  // return (await fetchAppointments()).data
-  return appointments.map((item) => ({ ...item }))
+  return (await fetchAppointments()).data
+}
+
+export const getAppointment = async (id) => {
+  await delay(250)
+  return (await fetchAppointment(id)).data
 }
 
 export const removeAppointment = async (id) => {

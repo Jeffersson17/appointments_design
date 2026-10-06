@@ -1,22 +1,15 @@
 <script setup>
 import { computed, onMounted, ref } from 'vue'
-import ActionButtons from '@/components/common/ActionButtons.vue'
-import ConfirmationModal from '@/components/common/ConfirmationModal.vue'
 import DataTable from '@/components/common/DataTable.vue'
 import Pagination from '@/components/common/Pagination.vue'
 import SearchInput from '@/components/common/SearchInput.vue'
 import { useTableData } from '@/composables/useTableData'
-import {
-  getAppointments,
-  removeAppointment,
-} from '@/services/appointmentsService'
-import { formatDateBR } from '@/utils/format'
+import { getAppointments } from '@/services/appointmentsService'
+import { APPOINTMENT_STATUS_LABELS } from '@/types/status'
+import { formatDateTimeBR } from '@/utils/format'
 
 const appointments = ref([])
 const loading = ref(true)
-const actionLoading = ref(false)
-const selectedAppointment = ref(null)
-const showDeleteModal = ref(false)
 
 const dateStart = ref('')
 const dateEnd = ref('')
@@ -27,13 +20,17 @@ const columns = [
   { key: 'clientName', label: 'Cliente' },
   { key: 'serviceName', label: 'Corte' },
   { key: 'datetime', label: 'Data e Hora' },
-  { key: 'options', label: 'Opções', width: '56px' },
+  { key: 'status', label: 'Status do agendamento' },
 ]
+
+const getAppointmentDate = (item) =>
+  String(item.scheduled_at ?? '').slice(0, 10)
 
 const dateFiltered = computed(() => {
   return appointments.value.filter((item) => {
-    if (appliedStart.value && item.date < appliedStart.value) return false
-    if (appliedEnd.value && item.date > appliedEnd.value) return false
+    const itemDate = getAppointmentDate(item)
+    if (appliedStart.value && itemDate < appliedStart.value) return false
+    if (appliedEnd.value && itemDate > appliedEnd.value) return false
     return true
   })
 })
@@ -48,10 +45,20 @@ const {
   resetPage,
 } = useTableData(appointments, ['clientName', 'serviceName'], dateFiltered)
 
+const normalizeAppointment = (item) => ({
+  ...item,
+  clientName: `${item.client?.first_name ?? ''} ${item.client?.last_name ?? ''}`.trim(),
+  serviceName: item.service?.service_name ?? '',
+})
+
 const loadAppointments = async () => {
   loading.value = true
   try {
-    appointments.value = await getAppointments()
+    const data = await getAppointments()
+    const list = Array.isArray(data) ? data : data?.results ?? []
+    appointments.value = list.map(normalizeAppointment)
+  } catch {
+    window.alert('Erro ao carregar os agendamentos.')
   } finally {
     loading.value = false
   }
@@ -72,40 +79,8 @@ const clearFilters = () => {
   resetPage()
 }
 
-const handleEdit = (appointment) => {
-  window.alert(
-    `Edição do agendamento de "${appointment.clientName}" será integrada à API.`,
-  )
-}
-
-const requestDelete = (appointment) => {
-  selectedAppointment.value = appointment
-  showDeleteModal.value = true
-}
-
-const closeModal = (force = false) => {
-  if (actionLoading.value && !force) return
-  showDeleteModal.value = false
-  selectedAppointment.value = null
-}
-
-const deleteMessage = computed(() => {
-  const name = selectedAppointment.value?.clientName ?? 'este cliente'
-  return `Tem certeza que deseja excluir o agendamento de "${name}"?`
-})
-
-const confirmDelete = async () => {
-  if (!selectedAppointment.value) return
-  actionLoading.value = true
-  try {
-    await removeAppointment(selectedAppointment.value.id)
-    appointments.value = appointments.value.filter(
-      (item) => item.id !== selectedAppointment.value.id,
-    )
-    closeModal(true)
-  } finally {
-    actionLoading.value = false
-  }
+const formatStatusAppointments = (status) => {
+  return APPOINTMENT_STATUS_LABELS[status] ?? status
 }
 
 onMounted(loadAppointments)
@@ -151,15 +126,17 @@ onMounted(loadAppointments)
         :rows="paginatedItems"
         :loading="loading"
       >
-        <template #cell-datetime="{ row }">
-          {{ formatDateBR(row.date) }} às {{ row.time }}
+        <template #cell-clientName="{ row }">
+          {{ row.clientName || '—' }}
         </template>
-
-        <template #cell-options="{ row }">
-          <ActionButtons
-            @edit="handleEdit(row)"
-            @delete="requestDelete(row)"
-          />
+        <template #cell-serviceName="{ row }">
+          {{ row.serviceName || '—' }}
+        </template>
+        <template #cell-datetime="{ row }">
+          {{ formatDateTimeBR(row.scheduled_at) }}
+        </template>
+        <template #cell-status="{ row }">
+          {{ formatStatusAppointments(row.status) }}
         </template>
       </DataTable>
 
@@ -172,16 +149,6 @@ onMounted(loadAppointments)
         @change="goToPage"
       />
     </div>
-
-    <ConfirmationModal
-      :open="showDeleteModal"
-      title="Excluir agendamento"
-      :message="deleteMessage"
-      confirm-label="Excluir"
-      :loading="actionLoading"
-      @confirm="confirmDelete"
-      @cancel="closeModal"
-    />
   </section>
 </template>
 

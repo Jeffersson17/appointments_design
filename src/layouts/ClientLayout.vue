@@ -1,18 +1,18 @@
 <script setup>
-import { storeToRefs } from 'pinia'
-import { useRouter } from 'vue-router'
-import UserAvatar from '@/components/layout/UserAvatar.vue'
-import { useAuthStore } from '@/stores/auth'
-import { ROLE_LABELS } from '@/types/roles'
+import { storeToRefs } from "pinia";
+import { useRouter } from "vue-router";
+import UserAvatar from "@/components/layout/UserAvatar.vue";
+import { useAuthStore } from "@/stores/auth";
+import { ROLE_LABELS } from "@/types/roles";
 
-const auth = useAuthStore()
-const { user, userName, role } = storeToRefs(auth)
-const router = useRouter()
+const auth = useAuthStore();
+const { user, userName, role } = storeToRefs(auth);
+const router = useRouter();
 
 const handleLogout = async () => {
-  await auth.logout()
-  router.push({ name: 'login' })
-}
+  await auth.logout();
+  router.push({ name: "login" });
+};
 </script>
 
 <template>
@@ -44,10 +44,16 @@ const handleLogout = async () => {
       <div class="client-shell__user">
         <div class="client-shell__user-meta">
           <span class="client-shell__user-name">{{ userName }}</span>
-          <span class="client-shell__user-role">{{ ROLE_LABELS[role] || role }}</span>
+          <span class="client-shell__user-role">{{
+            ROLE_LABELS[role] || role
+          }}</span>
         </div>
         <UserAvatar :name="userName" :src="user?.avatarUrl" />
-        <button type="button" class="btn btn--secondary btn--sm" @click="handleLogout">
+        <button
+          type="button"
+          class="btn btn--secondary btn--sm"
+          @click="handleLogout"
+        >
           Sair
         </button>
       </div>
@@ -62,8 +68,13 @@ const handleLogout = async () => {
 <style scoped>
 .client-shell {
   min-height: 100vh;
+  font-family: var(--font-display);
   background:
-    radial-gradient(circle at top right, rgba(37, 99, 235, 0.12), transparent 30%),
+    radial-gradient(
+      circle at top right,
+      rgba(37, 99, 235, 0.12),
+      transparent 30%
+    ),
     linear-gradient(180deg, #f7f9fc 0%, var(--color-bg) 45%);
 }
 
@@ -128,7 +139,9 @@ const handleLogout = async () => {
   color: var(--color-muted);
   font-size: 0.92rem;
   font-weight: 600;
-  transition: background 0.15s, color 0.15s;
+  transition:
+    background 0.15s,
+    color 0.15s;
 }
 
 .client-shell__nav-link:hover {

@@ -1,7 +1,7 @@
 <script setup>
-import { computed, onMounted, ref, watch } from 'vue'
-import ConfirmationModal from '@/components/common/ConfirmationModal.vue'
-import EmptyState from '@/components/common/EmptyState.vue'
+import { computed, onMounted, ref, watch } from "vue";
+import ConfirmationModal from "@/components/common/ConfirmationModal.vue";
+import EmptyState from "@/components/common/EmptyState.vue";
 import {
   cancelBooking,
   completeBooking,
@@ -9,39 +9,40 @@ import {
   getActiveBooking,
   getAvailableSlots,
   getBookingServices,
-} from '@/services/bookingService'
-import { useAuthStore } from '@/stores/auth'
-import { formatCurrency, formatDateBR, formatDuration } from '@/utils/format'
+} from "@/services/bookingService";
+import { useAuthStore } from "@/stores/auth";
+import { formatCurrency, formatDateBR, formatDuration } from "@/utils/format";
 
-const auth = useAuthStore()
+const auth = useAuthStore();
 
-const today = new Date()
-const pad = (value) => String(value).padStart(2, '0')
-const minDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`
+const today = new Date();
+const pad = (value) => String(value).padStart(2, "0");
+const minDate = `${today.getFullYear()}-${pad(today.getMonth() + 1)}-${pad(today.getDate())}`;
 
-const selectedDate = ref('')
-const selectedTime = ref('')
-const selectedServiceId = ref(null)
+const selectedDate = ref("");
+const selectedTime = ref("");
+const selectedServiceId = ref(null);
 
-const slots = ref([])
-const services = ref([])
-const loadingSlots = ref(false)
-const loadingServices = ref(false)
-const loadingActive = ref(true)
-const submitting = ref(false)
-const actionLoading = ref(false)
-const activeBooking = ref(null)
-const error = ref('')
-const feedback = ref('')
+const slots = ref([]);
+const services = ref([]);
+const loadingSlots = ref(false);
+const loadingServices = ref(false);
+const loadingActive = ref(true);
+const submitting = ref(false);
+const actionLoading = ref(false);
+const activeBooking = ref(null);
+const error = ref("");
+const feedback = ref("");
 
 const modal = ref({
   open: false,
   action: null,
-})
+});
 
-const selectedService = computed(() =>
-  services.value.find((item) => item.id === selectedServiceId.value) ?? null,
-)
+const selectedService = computed(
+  () =>
+    services.value.find((item) => item.id === selectedServiceId.value) ?? null,
+);
 
 const canConfirm = computed(
   () =>
@@ -50,100 +51,100 @@ const canConfirm = computed(
     Boolean(selectedService.value) &&
     !submitting.value &&
     !activeBooking.value,
-)
+);
 
 const loadActiveBooking = async () => {
-  loadingActive.value = true
-  error.value = ''
+  loadingActive.value = true;
+  error.value = "";
 
   try {
-    activeBooking.value = await getActiveBooking(auth.user?.id)
+    activeBooking.value = await getActiveBooking(auth.user?.id);
   } catch (err) {
-    activeBooking.value = null
-    error.value = 'Não foi possível carregar seu agendamento.'
-    console.error(err)
+    activeBooking.value = null;
+    error.value = "Não foi possível carregar seu agendamento.";
+    console.error(err);
   } finally {
-    loadingActive.value = false
+    loadingActive.value = false;
   }
-}
+};
 
 const loadSlots = async (isoDate) => {
-  loadingSlots.value = true
-  selectedTime.value = ''
-  selectedServiceId.value = null
-  services.value = []
-  error.value = ''
+  loadingSlots.value = true;
+  selectedTime.value = "";
+  selectedServiceId.value = null;
+  services.value = [];
+  error.value = "";
 
   try {
-    slots.value = await getAvailableSlots(isoDate)
+    slots.value = await getAvailableSlots(isoDate);
   } catch (err) {
-    slots.value = []
-    error.value = 'Não foi possível carregar os horários.'
-    console.error(err)
+    slots.value = [];
+    error.value = "Não foi possível carregar os horários.";
+    console.error(err);
   } finally {
-    loadingSlots.value = false
+    loadingSlots.value = false;
   }
-}
+};
 
 const loadServices = async () => {
-  loadingServices.value = true
-  selectedServiceId.value = null
-  error.value = ''
+  loadingServices.value = true;
+  selectedServiceId.value = null;
+  error.value = "";
 
   try {
-    services.value = await getBookingServices()
+    services.value = await getBookingServices();
   } catch (err) {
-    services.value = []
-    error.value = 'Não foi possível carregar os cortes.'
-    console.error(err)
+    services.value = [];
+    error.value = "Não foi possível carregar os cortes.";
+    console.error(err);
   } finally {
-    loadingServices.value = false
+    loadingServices.value = false;
   }
-}
+};
 
 watch(selectedDate, (value) => {
   if (!value) {
-    slots.value = []
-    selectedTime.value = ''
-    selectedServiceId.value = null
-    services.value = []
-    return
+    slots.value = [];
+    selectedTime.value = "";
+    selectedServiceId.value = null;
+    services.value = [];
+    return;
   }
-  loadSlots(value)
-})
+  loadSlots(value);
+});
 
 watch(selectedTime, (value) => {
   if (!value) {
-    services.value = []
-    selectedServiceId.value = null
-    return
+    services.value = [];
+    selectedServiceId.value = null;
+    return;
   }
-  loadServices()
-})
+  loadServices();
+});
 
 const selectTime = (time) => {
-  selectedTime.value = time
-}
+  selectedTime.value = time;
+};
 
 const selectService = (serviceId) => {
-  selectedServiceId.value = serviceId
-}
+  selectedServiceId.value = serviceId;
+};
 
 const resetFlow = () => {
-  selectedDate.value = ''
-  selectedTime.value = ''
-  selectedServiceId.value = null
-  slots.value = []
-  services.value = []
-  error.value = ''
-}
+  selectedDate.value = "";
+  selectedTime.value = "";
+  selectedServiceId.value = null;
+  slots.value = [];
+  services.value = [];
+  error.value = "";
+};
 
 const confirmBooking = async () => {
-  if (!canConfirm.value) return
+  if (!canConfirm.value) return;
 
-  submitting.value = true
-  error.value = ''
-  feedback.value = ''
+  submitting.value = true;
+  error.value = "";
+  feedback.value = "";
 
   try {
     activeBooking.value = await createBooking({
@@ -154,63 +155,63 @@ const confirmBooking = async () => {
       date: selectedDate.value,
       time: selectedTime.value,
       price: selectedService.value.price,
-      durationMinutes: selectedService.value.durationMinutes,
-    })
-    resetFlow()
-    feedback.value = 'Agendamento confirmado com sucesso.'
+      duration: selectedService.value.duration,
+    });
+    resetFlow();
+    feedback.value = "Agendamento confirmado com sucesso.";
   } catch (err) {
     error.value =
-      err?.message === 'ACTIVE_BOOKING_EXISTS'
-        ? 'Você já possui um agendamento ativo.'
-        : 'Não foi possível confirmar o agendamento.'
-    console.error(err)
+      err?.message === "ACTIVE_BOOKING_EXISTS"
+        ? "Você já possui um agendamento ativo."
+        : "Não foi possível confirmar o agendamento.";
+    console.error(err);
   } finally {
-    submitting.value = false
+    submitting.value = false;
   }
-}
+};
 
 const openActionModal = (action) => {
-  modal.value = { open: true, action }
-}
+  modal.value = { open: true, action };
+};
 
 const closeActionModal = () => {
-  if (actionLoading.value) return
-  modal.value = { open: false, action: null }
-}
+  if (actionLoading.value) return;
+  modal.value = { open: false, action: null };
+};
 
 const confirmAction = async () => {
-  if (!activeBooking.value || !modal.value.action) return
+  if (!activeBooking.value || !modal.value.action) return;
 
-  actionLoading.value = true
-  error.value = ''
-  feedback.value = ''
+  actionLoading.value = true;
+  error.value = "";
+  feedback.value = "";
 
   try {
-    if (modal.value.action === 'complete') {
-      await completeBooking(activeBooking.value.id, auth.user?.id)
-      feedback.value = 'Agendamento concluído.'
+    if (modal.value.action === "complete") {
+      await completeBooking(activeBooking.value.id);
+      feedback.value = "Agendamento concluído.";
     } else {
-      await cancelBooking(activeBooking.value.id, auth.user?.id)
-      feedback.value = 'Agendamento cancelado.'
+      await cancelBooking(activeBooking.value.id);
+      feedback.value = "Agendamento cancelado.";
     }
 
-    activeBooking.value = null
-    modal.value = { open: false, action: null }
+    activeBooking.value = null;
+    modal.value = { open: false, action: null };
   } catch (err) {
-    error.value = 'Não foi possível atualizar o agendamento.'
-    console.error(err)
+    error.value = "Não foi possível atualizar o agendamento.";
+    console.error(err);
   } finally {
-    actionLoading.value = false
+    actionLoading.value = false;
   }
-}
+};
 
-onMounted(loadActiveBooking)
+onMounted(loadActiveBooking);
 </script>
 
 <template>
   <section class="booking">
     <header class="booking__header">
-      <h1>Olá, {{ auth.userName.split(' ')[0] }}</h1>
+      <h1>Olá, {{ auth.userName.split(" ")[0] }}</h1>
       <p v-if="activeBooking">
         Você já tem um agendamento ativo. Conclua ou cancele para marcar outro.
       </p>
@@ -243,7 +244,7 @@ onMounted(loadActiveBooking)
         </li>
         <li>
           <span>Duração</span>
-          <strong>{{ formatDuration(activeBooking.durationMinutes) }}</strong>
+          <strong>{{ formatDuration(activeBooking.duration) }}</strong>
         </li>
         <li>
           <span>Valor</span>
@@ -298,7 +299,9 @@ onMounted(loadActiveBooking)
           {{ formatDateBR(selectedDate) }}
         </p>
 
-        <div v-if="loadingSlots" class="booking__loading">Carregando horários...</div>
+        <div v-if="loadingSlots" class="booking__loading">
+          Carregando horários...
+        </div>
 
         <EmptyState
           v-else-if="!slots.length"
@@ -328,7 +331,9 @@ onMounted(loadActiveBooking)
           Horário selecionado: {{ selectedTime }}
         </p>
 
-        <div v-if="loadingServices" class="booking__loading">Carregando cortes...</div>
+        <div v-if="loadingServices" class="booking__loading">
+          Carregando cortes...
+        </div>
 
         <EmptyState
           v-else-if="!services.length"
@@ -341,12 +346,14 @@ onMounted(loadActiveBooking)
             :key="service.id"
             type="button"
             class="booking__service"
-            :class="{ 'booking__service--active': selectedServiceId === service.id }"
+            :class="{
+              'booking__service--active': selectedServiceId === service.id,
+            }"
             @click="selectService(service.id)"
           >
             <div>
               <strong>{{ service.name }}</strong>
-              <span>{{ formatDuration(service.durationMinutes) }}</span>
+              <span>{{ formatDuration(service.duration) }}</span>
             </div>
             <em>{{ formatCurrency(service.price) }}</em>
           </button>
@@ -382,13 +389,14 @@ onMounted(loadActiveBooking)
           :disabled="!canConfirm"
           @click="confirmBooking"
         >
-          {{ submitting ? 'Confirmando...' : 'Confirmar agendamento' }}
+          {{ submitting ? "Confirmando..." : "Confirmar agendamento" }}
         </button>
       </section>
     </template>
 
     <ConfirmationModal
       :open="modal.open"
+      class="booking__buttons"
       :title="
         modal.action === 'complete'
           ? 'Concluir agendamento'
@@ -414,6 +422,7 @@ onMounted(loadActiveBooking)
 <style scoped>
 .booking {
   display: flex;
+  font-family: var(--font-display);
   flex-direction: column;
   gap: 1rem;
 }
@@ -549,7 +558,10 @@ onMounted(loadActiveBooking)
   color: var(--color-text);
   font-weight: 600;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, color 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    color 0.15s;
 }
 
 .booking__slot:hover {
@@ -581,7 +593,10 @@ onMounted(loadActiveBooking)
   background: #fff;
   text-align: left;
   cursor: pointer;
-  transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
+  transition:
+    border-color 0.15s,
+    background 0.15s,
+    box-shadow 0.15s;
 }
 
 .booking__service:hover {

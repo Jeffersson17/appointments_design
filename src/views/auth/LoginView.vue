@@ -1,68 +1,67 @@
 <script setup>
-import { ref } from 'vue'
-import { useRoute, useRouter } from 'vue-router'
-import { useAuthStore } from '@/stores/auth'
-import { getHomeRouteByRole } from '@/utils/navigation'
+import { ref } from "vue";
+import { useRoute, useRouter } from "vue-router";
+import { useAuthStore } from "@/stores/auth";
+import { getHomeRouteByRole } from "@/utils/navigation";
 
-const auth = useAuthStore()
-const route = useRoute()
-const router = useRouter()
+const auth = useAuthStore();
+const route = useRoute();
+const router = useRouter();
 
-const email = ref('')
-const password = ref('')
-const loading = ref(false)
-const error = ref('')
-
+const email = ref("");
+const password = ref("");
+const loading = ref(false);
+const error = ref("");
 
 const resolveRedirect = (userRole) => {
-  const redirectPath = route.query.redirect
+  const redirectPath = route.query.redirect;
 
-  if (typeof redirectPath === 'string' && redirectPath.startsWith('/')) {
+  if (typeof redirectPath === "string" && redirectPath.startsWith("/")) {
     const clientTryingPanel =
-      userRole === 'CLIENT' && redirectPath.startsWith('/app')
+      userRole === "CLIENT" && redirectPath.startsWith("/app");
     const staffTryingClient =
-      userRole !== 'CLIENT' && redirectPath.startsWith('/cliente')
+      userRole !== "CLIENT" && redirectPath.startsWith("/cliente");
 
     if (!clientTryingPanel && !staffTryingClient) {
-      return redirectPath
+      return redirectPath;
     }
   }
 
-  return getHomeRouteByRole(userRole)
-}
+  return getHomeRouteByRole(userRole);
+};
 
 const handleSubmit = async () => {
-  error.value = ''
-  loading.value = true
+  error.value = "";
+  loading.value = true;
 
   try {
     const user = await auth.login({
       email: email.value,
       password: password.value,
-    })
+    });
 
-    await router.push(resolveRedirect(user.role))
+    await router.push(resolveRedirect(user.role));
   } catch (err) {
     if (
-      err?.code === 'INVALID_CREDENTIALS' ||
-      err?.message === 'INVALID_CREDENTIALS' ||
+      err?.code === "INVALID_CREDENTIALS" ||
+      err?.message === "INVALID_CREDENTIALS" ||
       err?.response?.status === 401
     ) {
-      error.value = 'E-mail ou senha inválidos.'
+      error.value = "E-mail ou senha inválidos.";
     } else {
-      error.value = 'Não foi possível entrar. Tente novamente.'
+      error.value = "Não foi possível entrar. Tente novamente.";
     }
-    console.error(err)
+    console.error(err);
   } finally {
-    loading.value = false
+    loading.value = false;
   }
-}
+};
 </script>
 
 <template>
   <div class="login-card">
     <div class="login-card__brand">
-      <div class="login-card__logo" aria-hidden="true">A</div>
+      <div class="login-card__logo" aria-hidden="true">AP</div>
       <div>
         <h1>AgendaPro</h1>
         <p>Acesse com o seu perfil</p>
@@ -94,8 +93,12 @@ const handleSubmit = async () => {
 
       <p v-if="error" class="login-card__error">{{ error }}</p>
 
-      <button type="submit" class="btn btn--primary login-card__submit" :disabled="loading">
-        {{ loading ? 'Entrando...' : 'Entrar' }}
+      <button
+        type="submit"
+        class="btn btn--primary login-card__submit"
+        :disabled="loading"
+      >
+        {{ loading ? "Entrando..." : "Entrar" }}
       </button>
     </form>
   </div>
@@ -137,6 +140,7 @@ const handleSubmit = async () => {
 }
 
 .login-card__brand p {
+  font-family: var(--font-display);
   margin-top: 0.2rem;
   color: var(--color-muted);
   font-size: 0.92rem;
