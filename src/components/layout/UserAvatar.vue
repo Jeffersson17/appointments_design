@@ -66,8 +66,8 @@ const initials = computed(() => getInitials(props.name))
 }
 
 .user-avatar--company {
-  width: 2.5rem;
-  height: 2.5rem;
+  width: 3.4rem;
+  height: 3.4rem;
   border-radius: 8px;
   font-size: 0.75rem;
 }
