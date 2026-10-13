@@ -160,10 +160,16 @@ const confirmBooking = async () => {
     resetFlow();
     feedback.value = "Agendamento confirmado com sucesso.";
   } catch (err) {
-    error.value =
-      err?.message === "ACTIVE_BOOKING_EXISTS"
-        ? "Você já possui um agendamento ativo."
-        : "Não foi possível confirmar o agendamento.";
+    if (err?.message === "ACTIVE_BOOKING_EXISTS") {
+      error.value = "Você já possui um agendamento ativo.";
+    } else if (err?.message === "SLOT_ALREADY_TAKEN") {
+      error.value = "Esse horário já foi reservado. Escolha outro.";
+      if (selectedDate.value) loadSlots(selectedDate.value);
+    } else {
+      error.value =
+        err?.response?.data?.detail ??
+        "Não foi possível confirmar o agendamento.";
+    }
     console.error(err);
   } finally {
     submitting.value = false;
