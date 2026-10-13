@@ -123,8 +123,19 @@ const submitCreate = async () => {
     companies.value = [createdCompany, ...companies.value];
     closeCreateModal(true);
   } catch (err) {
-    formError.value = "Não foi possível criar a empresa.";
-    console.error(err);
+    const errors = err.response?.data;
+
+    if (errors?.email) {
+      formError.value = Array.isArray(errors.email)
+        ? errors.email[0]
+        : errors.email;
+    } else if (errors?.detail) {
+      formError.value = errors.detail;
+    } else {
+      formError.value = "Não foi possível criar a empresa. Tente novamente.";
+    }
+
+    console.error("Erro ao cadastrar empresa:", errors ?? err.message);
   } finally {
     formLoading.value = false;
   }
@@ -142,6 +153,11 @@ const handleEdit = (company) => {
   };
   formError.value = "";
   showEditModal.value = true;
+};
+
+const handleLogoChange = (event) => {
+  const file = event.target.files?.[0] ?? null;
+  form.value.logotipo = file;
 };
 
 const submitEdit = async () => {
@@ -369,6 +385,7 @@ onMounted(loadCompanies);
           id="company-logo"
           type="file"
           accept="image/*"
+          @change="handleLogoChange"
           placeholder="URL da logotipo da empresa"
         />
       </div>
@@ -440,6 +457,7 @@ onMounted(loadCompanies);
           id="edit-company-logo"
           type="file"
           accept="image/*"
+          @change="handleLogoChange"
           placeholder="URL do logotipo"
         />
       </div>

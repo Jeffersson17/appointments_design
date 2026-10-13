@@ -7,8 +7,6 @@ import {
 import { fetchServices } from '@/api/services'
 import { formatTimeBR } from '@/utils/format'
 
-const delay = (ms = 180) => new Promise((resolve) => setTimeout(resolve, ms))
-
 const mockBaseSlots = [
   '08:00',
   '08:30',
@@ -18,8 +16,6 @@ const mockBaseSlots = [
   '10:30',
   '11:00',
   '11:30',
-  '13:00',
-  '13:30',
   '14:00',
   '14:30',
   '15:00',
@@ -29,15 +25,21 @@ const mockBaseSlots = [
   '17:00',
   '17:30',
   '18:00',
+  '18:30',
+  '19:00',
 ]
 
-const getBusySlotIndexes = (isoDate = '') => {
-  const day = Number(isoDate.split('-')[2] || 1)
-  if (day % 2 === 0) return [1, 4, 7, 10, 14]
-  return [0, 3, 6, 9, 12, 16]
-}
-
 const toList = (data) => (Array.isArray(data) ? data : data?.results ?? [])
+
+const getAppointmentDate = (scheduledAt = '') =>
+  String(scheduledAt).slice(0, 10)
+
+/** Extrai HH:mm de "2026-10-12T17:30:00-03:00". */
+const getAppointmentTime = (scheduledAt = '') => {
+  const match = String(scheduledAt).match(/T(\d{2}):(\d{2})/)
+  if (match) return `${match[1]}:${match[2]}`
+  return formatTimeBR(scheduledAt)
+}
 
 const normalizeBooking = (item) => {
   const scheduledAt = item.scheduled_at ?? ''
@@ -45,8 +47,8 @@ const normalizeBooking = (item) => {
     id: item.id,
     status: item.status,
     scheduled_at: scheduledAt,
-    date: String(scheduledAt).slice(0, 10),
-    time: formatTimeBR(scheduledAt),
+    date: getAppointmentDate(scheduledAt),
+    time: getAppointmentTime(scheduledAt),
     serviceName: item.service?.service_name ?? '',
     serviceId: item.service?.id ?? null,
     price: Number(item.service?.price ?? 0),
@@ -70,20 +72,33 @@ const fetchClientBookings = async () => {
 
 /**
  * Retorna horários disponíveis para uma data.
- * Hoje usa mock; depois pode consultar a API Django.
+ * Bloqueia slots com status SCHEDULED da mesma empresa na data escolhida.
+ * CANCELLED / COMPLETED não bloqueiam.
  */
 export const getAvailableSlots = async (isoDate) => {
-  await delay()
   if (!isoDate) return []
 
-  const busy = new Set(getBusySlotIndexes(isoDate))
-  return mockBaseSlots
-    .map((time, index) => ({
-      time,
-      available: !busy.has(index),
-    }))
-    .filter((slot) => slot.available)
-    .map((slot) => slot.time)
+  const { data } = await fetchAppointments()
+  const appointments = toList(data)
+
+  const enterpriseId =
+    appointments.find((item) => item.enterprise?.id != null)?.enterprise?.id ??
+    null
+
+  const busyTimes = new Set(
+    appointments
+      .filter((item) => {
+        if (item.status !== APPOINTMENT_STATUS.SCHEDULED) return false
+        if (getAppointmentDate(item.scheduled_at) !== isoDate) return false
+        if (enterpriseId != null && item.enterprise?.id !== enterpriseId) {
+          return false
+        }
+        return true
+      })
+      .map((item) => getAppointmentTime(item.scheduled_at)),
+  )
+
+  return mockBaseSlots.filter((time) => !busyTimes.has(time))
 }
 
 export const getBookingServices = async () => {
@@ -138,11 +153,14 @@ export const createBooking = async (payload) => {
         ? detail?.detail
         : detail
 
-    if (
-      typeof message === 'string' &&
-      message.toLowerCase().includes('agendamento ativo')
-    ) {
-      throw new Error('ACTIVE_BOOKING_EXISTS')
+    if (typeof message === 'string') {
+      const normalized = message.toLowerCase()
+      if (normalized.includes('agendamento ativo')) {
+        throw new Error('ACTIVE_BOOKING_EXISTS')
+      }
+      if (normalized.includes('já existe um agendamento')) {
+        throw new Error('SLOT_ALREADY_TAKEN')
+      }
     }
     throw err
   }
