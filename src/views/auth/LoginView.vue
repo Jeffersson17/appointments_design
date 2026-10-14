@@ -63,7 +63,7 @@ const handleSubmit = async () => {
     <div class="login-card__brand">
       <div class="login-card__logo" aria-hidden="true">AP</div>
       <div>
-        <h1>AgendaPro</h1>
+        <h1>Agenduo</h1>
         <p>Acesse com o seu perfil</p>
       </div>
     </div>

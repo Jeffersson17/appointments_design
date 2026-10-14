@@ -135,8 +135,8 @@ router.beforeEach((to) => {
 router.afterEach((to) => {
   const pageTitle = to.meta.title
   document.title = pageTitle
-    ? `${pageTitle} · AgendaPro`
-    : 'AgendaPro'
+    ? `${pageTitle} · Agenduo`
+    : 'Agenduo'
 })
 
 export default router

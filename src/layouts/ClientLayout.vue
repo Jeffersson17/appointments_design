@@ -21,7 +21,7 @@ const handleLogout = async () => {
       <div class="client-shell__brand">
         <div class="client-shell__logo" aria-hidden="true">A</div>
         <div>
-          <strong>AgendaPro</strong>
+          <strong>Agenduo</strong>
           <span>Agendamento online</span>
         </div>
       </div>

@@ -65,7 +65,7 @@ const isActive = (name) => route.name === name
         <img src="/src/assets/logo_system-appoinments.png" alt="Logo">
       </div>
       <div class="sidebar__brand-text">
-        <strong>AgendaPro</strong>
+        <strong>Agenduo</strong>
         <span> Painel de Controle</span>
       </div>
     </div>
